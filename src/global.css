@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    color: #2b2b2b;
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+  }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.app-container {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b8860b;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #96690f;
+}
+
+::selection {
+  background-color: #b8860b;
+  color: #ffffff;
+}
