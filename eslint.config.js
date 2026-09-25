@@ -17,5 +17,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Context modules intentionally export both a provider and its hook.
+      'react-refresh/only-export-components': 'off',
+      // Async data loading from an effect updates local state after the request resolves.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

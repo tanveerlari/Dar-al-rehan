@@ -1,5 +1,51 @@
 import perfumesImg from "./assets/perfumes.png";
 import attarImg from "./assets/attar.png";
+import floraBelleImg from "./assets/flora-belle.png";
+
+import floraBelleBlueImg from "./assets/flora-belle-blue.png";
+import floraBellePinkImg from "./assets/flora-belle-pink.png";
+
+// Oud Zaryaan ke liye — group photo jisme saare bottle colors ek saath hain
+import oudZaryaanBottlesImg from "./assets/oud-zaryaan-bottles.jpeg";
+import oudZaryaanImg from "./assets/oud-zaryaan.png";
+import oudZaryaanBannerImg from "./assets/oud-zaryaan-banner.jpeg";
+
+export const floraBelleProducts = [
+  {
+    id: 1,
+    routeType: "flora-belle",
+    type: "Perfume",
+    name: "Flora Belle - Azure",
+    notes: "Fresh, Floral, Aquatic",
+    price: 1999,
+    oldPrice: 2499,
+    discount: 20,
+    rating: 4.5,
+    reviews: 42,
+    category: "Eau de Parfum",
+    family: "Fresh",
+    size: "30 ml",
+    image: floraBelleBlueImg,
+    imageScale: 1.3,
+  },
+  {
+    id: 2,
+    routeType: "flora-belle",
+    type: "Perfume",
+    name: "Flora Belle - Rose",
+    notes: "Floral, Sweet, Powdery",
+    price: 1999,
+    oldPrice: 2499,
+    discount: 20,
+    rating: 4.5,
+    reviews: 38,
+    category: "Eau de Parfum",
+    family: "Floral",
+    size: "30 ml",
+    image: floraBellePinkImg,
+    imageScale: 1.3,
+  },
+];
 
 export const products = [
   {
@@ -19,6 +65,15 @@ export const products = [
     buttonText: "SHOP ATTAR",
     image: attarImg,
     link: "/attar",
+  },
+  {
+    id: 3,
+    title: "FLORA BELLE",
+    tagline: "For Women's ",
+    description: "Two shades. One essence. Elegance in every drop, crafted for every mood and moment.",
+    buttonText: "SHOP FLORA BELLE",
+    image: floraBelleImg,
+    link: "/collections/flora-belle",
   },
 ];
 
@@ -40,16 +95,9 @@ export const navLinks = [
 
 // ---- Perfumes listing page data ----
 
-export const perfumeProducts = [
-  { id: 1, type: "Perfume", name: "Royal Musk", notes: "Woody, Musky, Amber", price: 2399, oldPrice: 2999, discount: 20, rating: 4.5, reviews: 126, category: "Eau de Parfum", family: "Woody", size: "50 ml", image: perfumesImg },
-  { id: 2, type: "Perfume", name: "Oud Al Rehan", notes: "Oud, Woody, Spicy", price: 3399, oldPrice: 3999, discount: 15, rating: 4.5, reviews: 98, category: "Extrait de Parfum", family: "Oriental", size: "50 ml", image: perfumesImg },
-  { id: 3, type: "Perfume", name: "Amber Noir", notes: "Amber, Vanilla, Woody", price: 2249, oldPrice: 2499, discount: 10, rating: 4.5, reviews: 76, category: "Eau de Parfum", family: "Oriental", size: "30 ml", image: perfumesImg },
-  { id: 4, type: "Perfume", name: "Velvet Oud", notes: "Oud, Leather, Woody", price: 2249, oldPrice: 3299, discount: 32, rating: 4.5, reviews: 78, category: "Extrait de Parfum", family: "Woody", size: "50 ml", image: perfumesImg },
-  { id: 5, type: "Perfume", name: "Sandal Royale", notes: "Sandalwood, Spicy, Amber", price: 2049, oldPrice: 2499, discount: 18, rating: 4.5, reviews: 85, category: "Parfum", family: "Woody", size: "50 ml", image: perfumesImg },
-  { id: 6, type: "Perfume", name: "Midnight Elixir", notes: "Citrus, Aromatic, Woody", price: 1849, oldPrice: 2099, discount: 12, rating: 4.5, reviews: 63, category: "Eau de Parfum", family: "Citrus", size: "30 ml", image: perfumesImg },
-  { id: 7, type: "Perfume", name: "Desert Smoke", notes: "Woody, Smoky, Amber", price: 2974, oldPrice: 3499, discount: 15, rating: 4.5, reviews: 91, category: "Extrait de Parfum", family: "Woody", size: "100 ml", image: perfumesImg },
-  { id: 8, type: "Perfume", name: "Eternal Noir", notes: "Oriental, Spicy, Woody", price: 2974, oldPrice: 3499, discount: 20, rating: 4.5, reviews: 71, category: "Parfum", family: "Oriental", size: "50 ml", image: perfumesImg },
-];
+export const perfumesBannerImg = perfumesImg;
+
+export const perfumeProducts = [];
 
 export const filterOptions = {
   categories: ["Eau de Parfum", "Extrait de Parfum", "Parfum"],
@@ -65,15 +113,26 @@ export const filterOptions = {
 
 // ---- Attar listing page data ----
 
+export const attarBannerImg = attarImg;
+
 export const attarProducts = [
-  { id: 1, type: "Attar", name: "Oudh Al Haramain", notes: "Deep, Woody, Rich", price: 1199, oldPrice: 1499, discount: 20, rating: 4.5, reviews: 128, category: "Oud Attar", family: "Woody", size: "12 ml", image: attarImg },
-  { id: 2, type: "Attar", name: "Musk Al Tahara", notes: "Pure Musk, Soft, Clean", price: 999, oldPrice: 1199, discount: 15, rating: 4.5, reviews: 106, category: "Floral Attar", family: "Floral", size: "6 ml (Roll On)", image: attarImg },
-  { id: 3, type: "Attar", name: "Rasasi Chandan", notes: "Sandalwood, Warm, Woody", price: 1149, oldPrice: 1299, discount: 10, rating: 4.5, reviews: 87, category: "Woody Attar", family: "Woody", size: "12 ml", image: attarImg },
-  { id: 4, type: "Attar", name: "Oud Al Rehan", notes: "Woody, Smoky, Intense", price: 1499, oldPrice: 1799, discount: 15, rating: 4.5, reviews: 95, category: "Oud Attar", family: "Oriental", size: "24 ml", image: attarImg },
-  { id: 5, type: "Attar", name: "Jannat Ul Firdaus", notes: "Floral, Sweet, Fresh", price: 899, oldPrice: 1029, discount: 12, rating: 4.5, reviews: 71, category: "Floral Attar", family: "Fresh", size: "6 ml (Roll On)", image: attarImg },
-  { id: 6, type: "Attar", name: "Sandal Al Rehan", notes: "Sandalwood, Smooth, Warm", price: 1049, oldPrice: 1279, discount: 16, rating: 4.5, reviews: 61, category: "Woody Attar", family: "Woody", size: "12 ml", image: attarImg },
-  { id: 7, type: "Attar", name: "Amber Attar", notes: "Amber, Warm, Resinous", price: 1299, oldPrice: 1449, discount: 10, rating: 4.5, reviews: 68, category: "Fresh Attar", family: "Oriental", size: "12 ml", image: attarImg },
-  { id: 8, type: "Attar", name: "Misk Al Arabian", notes: "White Musk, Soft, Powdery", price: 1199, oldPrice: 1399, discount: 15, rating: 4.5, reviews: 92, category: "Spicy Attar", family: "Spicy", size: "6 ml (Roll On)", image: attarImg },
+{
+  id: 1,
+  type: "Attar",
+  name: "Oud Zaryaan",
+  notes: "A rich and timeless attar crafted with deep oud notes, blending warmth, elegance, and lasting sophistication in every drop.",
+  price: 559,
+  oldPrice: 699,
+  discount: 20,
+  rating: 4.5,
+  reviews: 0,
+  category: "Oud Attar",
+  family: "Woody",
+  size: "12",
+  image: oudZaryaanImg,
+  bottleShowcaseImage: oudZaryaanBottlesImg,
+  images: [oudZaryaanImg, oudZaryaanBannerImg],
+},
 ];
 
 export const attarFilterOptions = {
@@ -91,7 +150,7 @@ export const attarFilterOptions = {
 export const collectionsProducts = [...perfumeProducts, ...attarProducts];
 
 export const collectionsFilterOptions = {
-  types: ["Perfume", "Attar"],
+  types: ["Perfume", "Attar", "Collection"],
   families: ["Woody", "Floral", "Oriental", "Fresh", "Citrus", "Spicy", "Aromatic"],
   sizes: ["6 ml (Roll On)", "12 ml", "24 ml", "30 ml", "50 ml", "100 ml"],
   priceRanges: [

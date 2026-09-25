@@ -5,23 +5,30 @@ import { collectionsProducts, collectionsFilterOptions } from "../data";
 import { ProductCard } from "../components/ProductCard";
 import shopBannerImg from "../assets/shopimg.png";
 import { FilterGroup } from "../components/FilterGroup";
+import { FilterSidebar } from "../components/FilterSidebar";
+import { SortDropdown } from "../components/SortDropdown";
+import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 
 const PAGE_SIZE = 8;
 
 export function ShopPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
+  const searchTerm = searchParams.get("search") || "";
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [sortBy, setSortBy] = useState("popularity");
   const [currentPage, setCurrentPage] = useState(1);
+  const { supabaseProducts } = useSupabaseProducts();
+  const allProducts = useMemo(
+    () => [...collectionsProducts, ...supabaseProducts],
+    [supabaseProducts]
+  );
 
   useEffect(() => {
-    setSearchTerm(searchParams.get("search") || "");
     setCurrentPage(1);
-  }, [searchParams]);
+  }, [searchTerm]);
 
   const toggleValue = (value, list, setList) => {
     setCurrentPage(1);
@@ -29,11 +36,11 @@ export function ShopPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    let result = collectionsProducts.filter((p) => {
+    let result = allProducts.filter((p) => {
       const matchesSearch =
         searchTerm.trim().length === 0 ||
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.notes.toLowerCase().includes(searchTerm.toLowerCase());
+        (p.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = selectedTypes.length === 0 || selectedTypes.includes(p.type);
       const matchesFamily =
         selectedFamilies.length === 0 || selectedFamilies.includes(p.family);
@@ -52,7 +59,7 @@ export function ShopPage() {
     if (sortBy === "rating") result = [...result].sort((a, b) => b.rating - a.rating);
 
     return result;
-  }, [searchTerm, selectedTypes, selectedFamilies, selectedSizes, selectedPriceRanges, sortBy]);
+  }, [allProducts, searchTerm, selectedTypes, selectedFamilies, selectedSizes, selectedPriceRanges, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const paginatedProducts = filteredProducts.slice(
@@ -62,43 +69,46 @@ export function ShopPage() {
 
   return (
     <div className="w-full">
-      {/* Banner */}
-      <div className="w-full">
-        <img
-          src={shopBannerImg}
-          alt="Shop - Dar Al Rehan"
-          className="block h-auto w-full"
-        />
+      {/* Animated Shop Banner - Screen se halka sa gap aur rounded borders */}
+      <div className="w-full px-3 sm:px-5 md:px-8 pt-3 pb-2 overflow-hidden">
+        <div className="relative w-full overflow-hidden rounded-xl md:rounded-2xl shadow-md">
+          <img
+            src={shopBannerImg}
+            alt="Shop - Dar Al Rehan"
+            fetchPriority="high"
+            loading="eager"
+            className="block w-full h-auto max-h-[85vh] object-cover object-center animate-hero-reveal"
+          />
+          {/* Subtle Luxury Gradient Overlay */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+        </div>
       </div>
 
       {/* Breadcrumb */}
-      <div className="mx-auto flex max-w-[1440px] items-center gap-1 px-6 py-4 text-xs text-neutral-500 md:px-14">
+      <div className="mx-auto flex max-w-[1440px] items-center gap-1 px-6 py-3 text-xs text-neutral-500 sm:py-4 md:px-14">
         <Link to="/" className="hover:text-amber-700">Home</Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-neutral-800">Shop</span>
       </div>
 
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-8 px-6 pb-16 md:flex-row md:px-14">
-        {/* Sidebar filters */}
-        <aside className="w-full flex-shrink-0 md:w-64">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-serif text-lg text-neutral-800">Filters</h2>
-            <button
-              onClick={() => {
-                setSelectedTypes([]);
-                setSelectedFamilies([]);
-                setSelectedSizes([]);
-                setSelectedPriceRanges([]);
-                setCurrentPage(1);
-                setSearchTerm("");
-                setSearchParams({});
-              }}
-              className="text-xs text-amber-700 hover:underline"
-            >
-              Clear All
-            </button>
-          </div>
-
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-6 pb-16 md:flex-row md:gap-8 md:px-14">
+        {/* Filters: phone pe drawer, desktop pe sidebar */}
+        <FilterSidebar
+          activeCount={
+            selectedTypes.length +
+            selectedFamilies.length +
+            selectedSizes.length +
+            selectedPriceRanges.length
+          }
+          onClear={() => {
+            setSelectedTypes([]);
+            setSelectedFamilies([]);
+            setSelectedSizes([]);
+            setSelectedPriceRanges([]);
+            setCurrentPage(1);
+            setSearchParams({});
+          }}
+        >
           <FilterGroup title="Type">
             {collectionsFilterOptions.types.map((type) => (
               <FilterCheckbox
@@ -144,11 +154,11 @@ export function ShopPage() {
               />
             ))}
           </FilterGroup>
-        </aside>
+        </FilterSidebar>
 
         {/* Product grid */}
         <div className="flex-1">
-          <div className="mb-6 flex flex-col gap-3 border-b border-neutral-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-3 flex flex-col gap-2 sm:mb-6 sm:gap-3 sm:border-b sm:border-neutral-200 sm:pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="font-serif text-2xl text-neutral-800">
                 {searchTerm ? `Results for "${searchTerm}"` : "All Products"}
@@ -158,29 +168,19 @@ export function ShopPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-500">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 outline-none focus:border-amber-600"
-              >
-                <option value="popularity">Popularity</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="rating">Rating</option>
-              </select>
-            </div>
+            <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
           {filteredProducts.length === 0 ? (
             <p className="py-12 text-center text-sm text-neutral-500">
-              No products match the selected filters.
+              {allProducts.length === 0
+                ? "Our collection is coming soon."
+                : "No products match the selected filters."}
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4">
               {paginatedProducts.map((product) => (
-                <ProductCard key={`${product.type}-${product.id}`} product={product} />
+                <ProductCard key={`${product.routeType || product.type}-${product.id}`} product={product} />
               ))}
             </div>
           )}

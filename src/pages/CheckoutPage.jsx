@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronRight, CheckCircle } from "lucide-react";
+import { ChevronRight, CheckCircle, LogIn, ShieldAlert, Truck, MapPin } from "lucide-react";
+import { supabase } from "../supabaseClient";
+import { useCustomerAuth } from "../components/CustomerAuthContext";
 import { useCart } from "../components/CartContext";
+import { useRateLimiter } from "../hooks/useRateLimiter";
+import { getDeliveryDetails } from "../utils/deliveryCalculator";
+
+const isUuid = (value) =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
 export function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
+  const { user, openAuthModal, signInWithGoogle } = useCustomerAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -16,6 +25,27 @@ export function CheckoutPage() {
   });
   const [errors, setErrors] = useState({});
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { checkLimit, isBlocked, blockMessage } = useRateLimiter("placeOrder");
+
+  // Calculate live delivery info based on user's entered Pincode
+  const deliveryInfo = useMemo(() => {
+    return getDeliveryDetails(form.pincode);
+  }, [form.pincode]);
+
+  const deliveryCharge = cartItems.length > 0 ? deliveryInfo.charge : 0;
+  const finalTotal = cartItems.length > 0 ? cartTotal + deliveryCharge : 0;
+
+  // Auto-fill verified phone number
+  useEffect(() => {
+    if (user?.phone) {
+      const clean = user.phone.replace(/\D/g, "").slice(-10);
+      setForm((prev) => ({
+        ...prev,
+        phone: prev.phone || clean,
+      }));
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,16 +59,100 @@ export function CheckoutPage() {
     if (!form.address.trim()) newErrors.address = "Address is required";
     if (!form.city.trim()) newErrors.city = "City is required";
     if (!form.pincode.trim()) newErrors.pincode = "Pincode is required";
+    else if (!/^\d{6}$/.test(form.pincode.trim())) newErrors.pincode = "Enter a valid 6-digit pincode";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
+
+    // 🛡️ Rate Limit Check
+    const rateResult = checkLimit();
+    if (!rateResult.allowed) {
+      setErrors({ ...errors, rateLimit: rateResult.message });
+      return;
+    }
+
     if (!validate()) return;
-    setOrderPlaced(true);
-    clearCart();
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("orders").insert([
+        {
+          name: form.name,
+          phone: form.phone,
+          address: form.address,
+          city: form.city,
+          pincode: form.pincode,
+          // Phone OTP users have a local `phone_<number>` id, not a Supabase UUID.
+          user_id: isUuid(user?.id) ? user.id : null,
+          items: cartItems.map((item) => ({
+            name: item.name,
+            type: item.type,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          total: finalTotal,
+          payment_method: "cod",
+          payment_status: "pending",
+        },
+      ]);
+
+      if (error) {
+        alert("Failed to place order: " + error.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      setOrderPlaced(true);
+      clearCart();
+    } catch (err) {
+      alert("Something went wrong: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Not logged in — block checkout
+  if (!user) {
+    return (
+      <div className="mx-auto max-w-[1440px] px-6 py-20 text-center md:px-14">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-400/40 bg-amber-50 shadow-inner">
+          <LogIn className="h-7 w-7 text-amber-700" />
+        </div>
+        <h1
+          className="font-normal text-2xl text-neutral-800 sm:text-3xl"
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          Sign In to Continue
+        </h1>
+        <p className="mt-2 text-sm text-neutral-500 max-w-sm mx-auto">
+          Verify your mobile number with a quick OTP or sign in with Google to place your order securely.
+        </p>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={() => openAuthModal("/checkout")}
+            className="w-full sm:w-auto rounded-full bg-gradient-to-r from-amber-700 to-amber-800 px-8 py-3.5 text-xs font-semibold tracking-widest text-white shadow-md transition-all hover:from-amber-800 hover:to-amber-900 hover:shadow-lg"
+          >
+            SIGN IN WITH MOBILE OTP
+          </button>
+          <button
+            onClick={() => signInWithGoogle("/checkout")}
+            className="w-full sm:w-auto rounded-full border border-neutral-300 bg-white px-6 py-3.5 text-xs font-semibold tracking-wider text-neutral-700 shadow-sm transition-all hover:bg-neutral-50"
+          >
+            Google Sign In
+          </button>
+        </div>
+        <div>
+          <Link to="/cart" className="mt-6 inline-block text-xs text-neutral-500 hover:text-amber-700 hover:underline">
+            Back to Cart
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0 && !orderPlaced) {
     return (
@@ -54,14 +168,14 @@ export function CheckoutPage() {
   if (orderPlaced) {
     return (
       <div className="mx-auto max-w-[1440px] px-6 py-20 text-center md:px-14">
-        <CheckCircle className="mx-auto h-16 w-16 text-amber-700" />
-        <h1 className="mt-4 font-serif text-2xl text-neutral-800">Order Placed Successfully!</h1>
+        <CheckCircle className="mx-auto h-16 w-16 text-emerald-600" />
+        <h1 className="mt-4 font-serif text-3xl text-neutral-800">Thank you for your order!</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Thank you, {form.name}. We'll contact you at {form.phone} for delivery updates.
+          We have received your order and will contact you shortly for delivery confirmation.
         </p>
         <button
           onClick={() => navigate("/shop")}
-          className="mt-6 rounded-full bg-amber-700 px-6 py-2.5 text-xs font-medium tracking-wide text-white hover:bg-amber-800"
+          className="mt-8 rounded-full bg-amber-700 px-8 py-3 text-xs font-semibold tracking-widest text-white transition-colors hover:bg-amber-800"
         >
           CONTINUE SHOPPING
         </button>
@@ -69,133 +183,184 @@ export function CheckoutPage() {
     );
   }
 
+  const isPincodeEntered = String(form.pincode).trim().length === 6;
+
   return (
-    <div className="w-full">
-      <div className="mx-auto flex max-w-[1440px] items-center gap-1 px-6 py-4 text-xs text-neutral-500 md:px-14">
-        <Link to="/" className="hover:text-amber-700">Home</Link>
+    <div className="mx-auto max-w-[1440px] px-6 py-10 md:px-14">
+      <nav className="mb-6 flex items-center gap-2 text-xs text-neutral-500">
+        <Link to="/" className="hover:underline">Home</Link>
         <ChevronRight className="h-3 w-3" />
-        <Link to="/cart" className="hover:text-amber-700">Cart</Link>
+        <Link to="/cart" className="hover:underline">Cart</Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-neutral-800">Checkout</span>
-      </div>
+      </nav>
 
-      <div className="mx-auto max-w-[1440px] px-6 pb-16 md:px-14">
-        <h1 className="mb-8 font-serif text-3xl text-neutral-800">Checkout</h1>
+      <h1 className="mb-8 font-serif text-3xl text-neutral-800">Checkout</h1>
 
-        <div className="flex flex-col gap-10 md:flex-row">
-          {/* Form */}
-          <form onSubmit={handlePlaceOrder} className="flex-1 space-y-5">
-            <h2 className="font-serif text-lg text-neutral-800">Delivery Details</h2>
+      {/* 🛡️ Rate limit blocked alert banner */}
+      {isBlocked && (
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700" />
+          <div>
+            <p className="font-semibold">Order temporarily on hold</p>
+            <p className="text-xs text-amber-700">{blockMessage}</p>
+          </div>
+        </div>
+      )}
 
+      {errors.rateLimit && !isBlocked && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-600">
+          {errors.rateLimit}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
+        {/* Left: Shipping Form */}
+        <form onSubmit={handlePlaceOrder} className="space-y-4 lg:col-span-2">
+          <h2 className="font-serif text-lg text-neutral-800">Shipping Details</h2>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">Full Name *</label>
+            <input
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Enter your name"
+              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-amber-600"
+            />
+            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">Phone Number *</label>
+            <input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="10-digit mobile number"
+              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-amber-600"
+            />
+            {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">Address *</label>
+            <textarea
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="House/Flat No, Street, Area"
+              rows={3}
+              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-amber-600"
+            />
+            {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Full Name *</label>
+              <label className="block text-xs font-medium text-neutral-600">City *</label>
               <input
-                type="text"
-                name="name"
-                value={form.name}
+                name="city"
+                value={form.city}
                 onChange={handleChange}
-                className={`w-full rounded border px-3 py-2.5 text-sm outline-none focus:border-amber-600 ${
-                  errors.name ? "border-red-400" : "border-neutral-300"
-                }`}
-                placeholder="Your full name"
+                placeholder="City"
+                className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-amber-600"
               />
-              {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+              {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city}</p>}
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Phone Number *</label>
+              <label className="block text-xs font-medium text-neutral-600">Pincode *</label>
               <input
-                type="tel"
-                name="phone"
-                value={form.phone}
+                name="pincode"
+                maxLength={6}
+                value={form.pincode}
                 onChange={handleChange}
-                className={`w-full rounded border px-3 py-2.5 text-sm outline-none focus:border-amber-600 ${
-                  errors.phone ? "border-red-400" : "border-neutral-300"
-                }`}
-                placeholder="10-digit mobile number"
+                placeholder="6-digit pincode"
+                className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-amber-600"
               />
-              {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
+              {errors.pincode && <p className="mt-1 text-xs text-red-500">{errors.pincode}</p>}
             </div>
+          </div>
 
-            <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Address *</label>
-              <textarea
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                rows={3}
-                className={`w-full rounded border px-3 py-2.5 text-sm outline-none focus:border-amber-600 ${
-                  errors.address ? "border-red-400" : "border-neutral-300"
-                }`}
-                placeholder="House no, street, area"
-              />
-              {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-600">City *</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  className={`w-full rounded border px-3 py-2.5 text-sm outline-none focus:border-amber-600 ${
-                    errors.city ? "border-red-400" : "border-neutral-300"
-                  }`}
-                  placeholder="City"
-                />
-                {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city}</p>}
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-600">Pincode *</label>
-                <input
-                  type="text"
-                  name="pincode"
-                  value={form.pincode}
-                  onChange={handleChange}
-                  className={`w-full rounded border px-3 py-2.5 text-sm outline-none focus:border-amber-600 ${
-                    errors.pincode ? "border-red-400" : "border-neutral-300"
-                  }`}
-                  placeholder="6-digit pincode"
-                />
-                {errors.pincode && <p className="mt-1 text-xs text-red-500">{errors.pincode}</p>}
+          {/* 🚚 Real Courier Zone & Estimate Indicator */}
+          {isPincodeEntered && (
+            <div className="flex items-center gap-3 rounded-lg border border-amber-900/15 bg-[#FAF7F2] p-3 text-xs text-neutral-700">
+              <Truck className="h-5 w-5 text-amber-800 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold text-neutral-900">
+                  Courier Zone: {deliveryInfo.zone} ({deliveryInfo.state})
+                </p>
+                <p className="text-[11px] text-neutral-500">
+                  Est. Delivery: {deliveryInfo.days} • Shipping Fee: <strong className="text-amber-900">₹{deliveryInfo.charge}</strong>
+                </p>
               </div>
             </div>
+          )}
 
-            <button
-              type="submit"
-              className="w-full rounded-full bg-amber-700 py-3 text-sm font-medium tracking-wide text-white transition-colors hover:bg-amber-800"
-            >
-              PLACE ORDER
-            </button>
-          </form>
+          <div className="pt-4">
+            <p className="mb-2 text-xs font-medium text-neutral-600">Payment Method</p>
+            <div className="rounded border border-amber-600 bg-amber-50 p-3 text-xs text-amber-900">
+              Cash on Delivery (COD)
+            </div>
+          </div>
 
-          {/* Order summary */}
-          <div className="w-full rounded-md border border-neutral-200 p-6 md:w-80">
-            <h2 className="font-serif text-lg text-neutral-800">Order Summary</h2>
-            <div className="mt-4 flex flex-col gap-3">
-              {cartItems.map((item) => (
-                <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
-                  <img src={item.image} alt={item.name} className="h-12 w-12 object-contain" />
-                  <div className="flex-1">
-                    <p className="text-sm text-neutral-800">{item.name}</p>
-                    <p className="text-xs text-neutral-500">Qty: {item.quantity}</p>
-                  </div>
-                  <span className="text-sm font-medium text-neutral-800">
-                    ₹{item.price * item.quantity}
-                  </span>
-                </div>
-              ))}
+          <button
+            type="submit"
+            disabled={isBlocked || isSubmitting}
+            className="mt-6 w-full rounded-full bg-amber-700 py-3 text-xs font-semibold tracking-widest text-white transition-colors hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? "PLACING ORDER..." : `PLACE ORDER (₹${finalTotal.toLocaleString("en-IN")})`}
+          </button>
+        </form>
+
+        {/* Right: Order Summary */}
+        <div className="h-fit rounded-lg border border-neutral-200 bg-neutral-50 p-6">
+          <h2 className="font-serif text-lg text-neutral-800">Order Summary</h2>
+
+          <div className="mt-4 divide-y divide-neutral-200 text-xs text-neutral-600">
+            {cartItems.map((item) => (
+              <div key={`${item.id}-${item.size}`} className="flex justify-between py-2">
+                <span>
+                  {item.name} ({item.type}) × {item.quantity}
+                </span>
+                <span className="font-medium text-neutral-800">
+                  ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 border-t border-neutral-300 pt-4 space-y-2.5">
+            <div className="flex justify-between text-xs text-neutral-600">
+              <span>Subtotal</span>
+              <span className="font-medium text-neutral-800">₹{cartTotal.toLocaleString("en-IN")}</span>
             </div>
-            <div className="mt-4 flex justify-between border-t border-neutral-200 pt-4 text-sm text-neutral-600">
-              <span>Shipping</span>
-              <span>Free</span>
+
+            <div className="flex justify-between text-xs text-neutral-600">
+              <span className="flex items-center gap-1">
+                <Truck className="h-3.5 w-3.5 text-amber-700" />
+                <span>Delivery Charges</span>
+              </span>
+              <span className="font-semibold text-amber-900">
+                ₹{deliveryCharge}
+              </span>
             </div>
-            <div className="mt-2 flex justify-between text-base font-semibold text-neutral-800">
-              <span>Total</span>
-              <span>₹{cartTotal}</span>
+
+            {isPincodeEntered ? (
+              <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                <span>Destination:</span>
+                <span className="text-neutral-700 font-medium">{deliveryInfo.state} ({deliveryInfo.days})</span>
+              </div>
+            ) : (
+              <p className="text-[10px] italic text-neutral-400">
+                *Enter 6-digit Pincode to see exact courier rates for your area
+              </p>
+            )}
+
+            <div className="mt-3 flex justify-between border-t border-neutral-200 pt-3 text-sm font-semibold text-neutral-800">
+              <span>Total Amount</span>
+              <span className="text-base text-amber-900">₹{finalTotal.toLocaleString("en-IN")}</span>
             </div>
           </div>
         </div>

@@ -3,9 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function FilterGroup({ title, children }) {
-  const [isOpen, setIsOpen] = useState(() =>
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
-  );
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <div className="mb-4 border-b border-neutral-200 pb-4">
@@ -39,4 +37,4 @@ export function FilterGroup({ title, children }) {
       </AnimatePresence>
     </div>
   );
-}   
+}

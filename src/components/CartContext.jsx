@@ -1,10 +1,24 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { rateLimiter } from "../utils/rateLimiter";
 
 const CartContext = createContext();
+const STORAGE_KEY = "dar-al-rehan-cart";
+const getProductKey = (product) => `${product.routeType || product.type}-${product.id}`;
 
 export function CartProvider({ children }) {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const showToast = useCallback((product) => {
     setToast(product);
@@ -15,13 +29,20 @@ export function CartProvider({ children }) {
   }, []);
 
   const addToCart = (product, qty = 1) => {
+    // 🛡️ Rate limit check
+    const check = rateLimiter.check("addToCart");
+    if (!check.allowed) {
+      console.warn("Rate limited: addToCart blocked");
+      return;
+    }
+
     setCartItems((prev) => {
       const existing = prev.find(
-        (item) => item.type === product.type && item.id === product.id
+        (item) => getProductKey(item) === getProductKey(product)
       );
       if (existing) {
         return prev.map((item) =>
-          item.type === product.type && item.id === product.id
+          getProductKey(item) === getProductKey(product)
             ? { ...item, quantity: item.quantity + qty }
             : item
         );
@@ -32,13 +53,13 @@ export function CartProvider({ children }) {
   };
 
   const removeFromCart = (type, id) => {
-    setCartItems((prev) => prev.filter((item) => !(item.type === type && item.id === id)));
+    setCartItems((prev) => prev.filter((item) => getProductKey(item) !== `${type}-${id}`));
   };
 
   const updateQuantity = (type, id, quantity) => {
     if (quantity < 1) return;
     setCartItems((prev) =>
-      prev.map((item) => (item.type === type && item.id === id ? { ...item, quantity } : item))
+      prev.map((item) => (getProductKey(item) === `${type}-${id}` ? { ...item, quantity } : item))
     );
   };
 
