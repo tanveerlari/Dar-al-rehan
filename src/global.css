@@ -104,6 +104,18 @@
   will-change: transform, opacity, filter;
 }
 
+/* 🚫 Permanently Hide Netlify Badge & Feedback Drawer */
+#netlify-drawer-container,
+[data-netlify-drawer],
+netlify-drawer,
+.netlify-badge,
+iframe[src*="netlify"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Phone pe bottom nav ke neeche content na chhupe */
 @media (max-width: 767px) {
   #root {
