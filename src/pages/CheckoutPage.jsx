@@ -6,6 +6,7 @@ import { useCustomerAuth } from "../components/CustomerAuthContext";
 import { useCart } from "../components/CartContext";
 import { useRateLimiter } from "../hooks/useRateLimiter";
 import { getDeliveryDetails } from "../utils/deliveryCalculator";
+import { notifyAdminNewOrder } from "../utils/orderNotification";
 
 const isUuid = (value) =>
   typeof value === "string" &&
@@ -79,32 +80,35 @@ export function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.from("orders").insert([
-        {
-          name: form.name,
-          phone: form.phone,
-          address: form.address,
-          city: form.city,
-          pincode: form.pincode,
-          // Phone OTP users have a local `phone_<number>` id, not a Supabase UUID.
-          user_id: isUuid(user?.id) ? user.id : null,
-          items: cartItems.map((item) => ({
-            name: item.name,
-            type: item.type,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          total: finalTotal,
-          payment_method: "cod",
-          payment_status: "pending",
-        },
-      ]);
+      const orderPayload = {
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        pincode: form.pincode,
+        // Phone OTP users have a local `phone_<number>` id, not a Supabase UUID.
+        user_id: isUuid(user?.id) ? user.id : null,
+        items: cartItems.map((item) => ({
+          name: item.name,
+          type: item.type,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        total: finalTotal,
+        payment_method: "cod",
+        payment_status: "pending",
+      };
+
+      const { error } = await supabase.from("orders").insert([orderPayload]);
 
       if (error) {
         alert("Failed to place order: " + error.message);
         setIsSubmitting(false);
         return;
       }
+
+      // 🔔 Instant Notification to Admin (Telegram + SMS)
+      notifyAdminNewOrder(orderPayload);
 
       setOrderPlaced(true);
       clearCart();

@@ -1,6 +1,6 @@
 /**
- * 📱 Fast2SMS OTP Service
- * Sends real SMS OTP to Indian (+91) mobile numbers
+ * 📱 Fast2SMS OTP & Wallet Service
+ * Sends real SMS OTP to Indian (+91) mobile numbers & checks wallet balance
  */
 
 const FAST2SMS_API_KEY =
@@ -15,6 +15,37 @@ const otpStore = new Map();
  */
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
+ * Fetch Fast2SMS Wallet Balance
+ */
+export async function getFast2SmsBalance() {
+  try {
+    const response = await fetch("/api/fast2sms/dev/wallet", {
+      method: "POST",
+      headers: {
+        authorization: FAST2SMS_API_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+    if (data.return === true || typeof data.wallet !== "undefined") {
+      return {
+        success: true,
+        wallet: Number(data.wallet ?? 0),
+      };
+    }
+    return {
+      success: false,
+      wallet: 0,
+      message: data.message || "Failed to fetch wallet",
+    };
+  } catch (err) {
+    console.error("[Fast2SMS] Error checking wallet balance:", err);
+    return { success: false, wallet: 0 };
+  }
 }
 
 /**
