@@ -56,7 +56,7 @@ export const perfumeProducts = [
     type: "Perfume",
     name: "Flora Belle - Azure",
     notes: "Fresh, Floral, Aquatic",
-    price: 99,
+    price: 399,
     oldPrice: 499,
     discount: 20,
     rating: 4.5,
