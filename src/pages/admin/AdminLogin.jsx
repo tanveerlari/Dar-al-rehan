@@ -5,7 +5,7 @@ import { useCustomerAuth } from "../../components/CustomerAuthContext";
 import { Lock, ShieldAlert, Shield } from "lucide-react";
 import { useRateLimiter } from "../../hooks/useRateLimiter";
 
-const ADMIN_EMAIL = "laritanveer55@gmail.com";
+const ADMIN_EMAILS = ["rehanpatel346@gmail.com", "laritanveer55@gmail.com"];
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 Minutes
 
@@ -46,7 +46,10 @@ export function AdminLogin() {
     }
 
     // Email Check
-    if (email.trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    const normalizedInputEmail = email.trim().toLowerCase();
+    const isAuthorized = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === normalizedInputEmail);
+
+    if (!isAuthorized) {
       handleFailedAttempt();
       setError("Invalid credentials.");
       return;
@@ -112,6 +115,7 @@ export function AdminLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLocked}
+            placeholder="rehanpatel346@gmail.com"
             required
             className="w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm outline-none focus:border-amber-700 disabled:bg-neutral-100"
           />

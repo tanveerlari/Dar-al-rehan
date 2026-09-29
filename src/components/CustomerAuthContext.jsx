@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 import { rateLimiter } from "../utils/rateLimiter";
 import { sendOtpToPhone, verifyOtpCode } from "../utils/smsService";
 
+const ADMIN_EMAILS = ["rehanpatel346@gmail.com", "laritanveer55@gmail.com"];
 const CustomerAuthContext = createContext();
 
 export function CustomerAuthProvider({ children }) {
@@ -30,7 +31,8 @@ export function CustomerAuthProvider({ children }) {
       if (data.session?.user) {
         setUser(data.session.user);
         const path = window.location.pathname;
-        if (data.session.user.email?.toLowerCase() === "laritanveer55@gmail.com" && path === "/admin/login") {
+        const isUserAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === data.session.user.email?.toLowerCase());
+        if (isUserAdmin && path === "/admin/login") {
           navigate("/admin/dashboard");
         }
       }
@@ -41,7 +43,8 @@ export function CustomerAuthProvider({ children }) {
       if (session?.user) {
         setUser(session.user);
         const path = window.location.pathname;
-        if (event === "SIGNED_IN" && session.user.email?.toLowerCase() === "laritanveer55@gmail.com" && !path.startsWith("/admin/")) {
+        const isUserAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === session.user.email?.toLowerCase());
+        if (event === "SIGNED_IN" && isUserAdmin && !path.startsWith("/admin/")) {
           navigate("/admin/dashboard");
         }
       }

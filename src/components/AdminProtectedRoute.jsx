@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
 import { useCustomerAuth } from "./CustomerAuthContext";
 
-const ADMIN_EMAIL = "laritanveer55@gmail.com";
+const ADMIN_EMAILS = ["rehanpatel346@gmail.com", "laritanveer55@gmail.com"];
 
 export function AdminProtectedRoute({ children }) {
   const { adminUser, loading: adminLoading } = useAdminAuth();
@@ -13,7 +13,7 @@ export function AdminProtectedRoute({ children }) {
   }
 
   const currentEmail = (adminUser?.email || user?.email || "").toLowerCase();
-  const isAdmin = currentEmail === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = ADMIN_EMAILS.some((email) => email.toLowerCase() === currentEmail);
 
   if (!isAdmin) {
     return <Navigate to="/admin/login" replace />;
