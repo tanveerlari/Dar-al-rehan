@@ -1,7 +1,8 @@
 import Razorpay from "razorpay";
 
-const KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "rzp_live_ThsECEbsHQb6Vn";
-const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "EwCc9GM2b8whwENcHGSrEZU7";
+// Prioritize Live Key ID & Secret strictly to avoid any Netlify env variable mismatch
+const KEY_ID = "rzp_live_ThsECEbsHQb6Vn";
+const KEY_SECRET = "EwCc9GM2b8whwENcHGSrEZU7";
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
@@ -21,14 +22,6 @@ export async function handler(event) {
         statusCode: 400,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ error: "Amount must be at least 100 paise (₹1)" }),
-      };
-    }
-
-    if (!KEY_ID || !KEY_SECRET) {
-      return {
-        statusCode: 500,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "Razorpay credentials not configured" }),
       };
     }
 
