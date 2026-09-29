@@ -8,7 +8,7 @@ import { useRateLimiter } from "../hooks/useRateLimiter";
 import { getDeliveryDetails } from "../utils/deliveryCalculator";
 import { notifyAdminNewOrder } from "../utils/orderNotification";
 
-const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_ThsECEbsHQb6Vn";
+const RAZORPAY_KEY = "rzp_live_ThsECEbsHQb6Vn";
 
 const isUuid = (value) =>
   typeof value === "string" &&
@@ -442,7 +442,7 @@ export function CheckoutPage() {
           <div className="pt-4">
             <p className="mb-3 text-xs font-medium text-neutral-600">Payment Method</p>
             <div className="space-y-3">
-              {/* Online Payment Option (Razorpay) */}
+              {/* Online Payment Option (Razorpay Live) */}
               <label
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all ${
                   paymentMethod === "online"
