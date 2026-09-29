@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "C0rKjIgsH8UNRjRszD1oPTJS";
+const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "EwCc9GM2b8whwENcHGSrEZU7";
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {

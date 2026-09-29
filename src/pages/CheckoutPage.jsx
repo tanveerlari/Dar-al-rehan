@@ -8,7 +8,7 @@ import { useRateLimiter } from "../hooks/useRateLimiter";
 import { getDeliveryDetails } from "../utils/deliveryCalculator";
 import { notifyAdminNewOrder } from "../utils/orderNotification";
 
-const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_ThrvQA6FFgWfkd";
+const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_live_ThsECEbsHQb6Vn";
 
 const isUuid = (value) =>
   typeof value === "string" &&
