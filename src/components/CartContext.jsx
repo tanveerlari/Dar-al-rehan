@@ -17,7 +17,11 @@ export function CartProvider({ children }) {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+    if (cartItems.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, [cartItems]);
 
   const showToast = useCallback((product) => {
@@ -53,7 +57,13 @@ export function CartProvider({ children }) {
   };
 
   const removeFromCart = (type, id) => {
-    setCartItems((prev) => prev.filter((item) => getProductKey(item) !== `${type}-${id}`));
+    setCartItems((prev) => {
+      const updated = prev.filter((item) => getProductKey(item) !== `${type}-${id}`);
+      if (updated.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      return updated;
+    });
   };
 
   const updateQuantity = (type, id, quantity) => {
@@ -64,6 +74,11 @@ export function CartProvider({ children }) {
   };
 
   const clearCart = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      console.error(e);
+    }
     setCartItems([]);
   };
 

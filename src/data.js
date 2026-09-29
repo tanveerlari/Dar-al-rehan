@@ -1,6 +1,5 @@
 import perfumesImg from "./assets/perfumes.png";
 import attarImg from "./assets/attar.png";
-import floraBelleImg from "./assets/flora-belle.png";
 
 import floraBelleBlueImg from "./assets/flora-belle-blue.png";
 import floraBellePinkImg from "./assets/flora-belle-pink.png";
@@ -9,43 +8,6 @@ import floraBellePinkImg from "./assets/flora-belle-pink.png";
 import oudZaryaanBottlesImg from "./assets/oud-zaryaan-bottles.jpeg";
 import oudZaryaanImg from "./assets/oud-zaryaan.png";
 import oudZaryaanBannerImg from "./assets/oud-zaryaan-banner.jpeg";
-
-export const floraBelleProducts = [
-  {
-    id: 1,
-    routeType: "flora-belle",
-    type: "Perfume",
-    name: "Flora Belle - Azure",
-    notes: "Fresh, Floral, Aquatic",
-    price: 1999,
-    oldPrice: 2499,
-    discount: 20,
-    rating: 4.5,
-    reviews: 42,
-    category: "Eau de Parfum",
-    family: "Fresh",
-    size: "30 ml",
-    image: floraBelleBlueImg,
-    imageScale: 1.3,
-  },
-  {
-    id: 2,
-    routeType: "flora-belle",
-    type: "Perfume",
-    name: "Flora Belle - Rose",
-    notes: "Floral, Sweet, Powdery",
-    price: 1999,
-    oldPrice: 2499,
-    discount: 20,
-    rating: 4.5,
-    reviews: 38,
-    category: "Eau de Parfum",
-    family: "Floral",
-    size: "30 ml",
-    image: floraBellePinkImg,
-    imageScale: 1.3,
-  },
-];
 
 export const products = [
   {
@@ -61,19 +23,10 @@ export const products = [
     id: 2,
     title: "ATTAR",
     tagline: "Pure. Authentic. Timeless.",
-    description: "Explore our exquisite attars made from the finest ingredients.",
+    description: "Explore our exquisite attars made from the finest natural ingredients.",
     buttonText: "SHOP ATTAR",
     image: attarImg,
     link: "/attar",
-  },
-  {
-    id: 3,
-    title: "FLORA BELLE",
-    tagline: "For Women's ",
-    description: "Two shades. One essence. Elegance in every drop, crafted for every mood and moment.",
-    buttonText: "SHOP FLORA BELLE",
-    image: floraBelleImg,
-    link: "/collections/flora-belle",
   },
 ];
 
@@ -97,7 +50,42 @@ export const navLinks = [
 
 export const perfumesBannerImg = perfumesImg;
 
-export const perfumeProducts = [];
+export const perfumeProducts = [
+  {
+    id: 1,
+    type: "Perfume",
+    name: "Flora Belle - Azure",
+    notes: "Fresh, Floral, Aquatic",
+    price: 99,
+    oldPrice: 499,
+    discount: 20,
+    rating: 4.5,
+    reviews: 42,
+    category: "Eau de Parfum",
+    family: "Fresh",
+    size: "30 ml",
+    image: floraBelleBlueImg,
+    imageScale: 1.3,
+  },
+  {
+    id: 2,
+    type: "Perfume",
+    name: "Flora Belle - Rose",
+    notes: "Floral, Sweet, Powdery",
+    price: 399,
+    oldPrice: 499,
+    discount: 20,
+    rating: 4.5,
+    reviews: 38,
+    category: "Eau de Parfum",
+    family: "Floral",
+    size: "30 ml",
+    image: floraBellePinkImg,
+    imageScale: 1.3,
+  },
+];
+
+export const floraBelleProducts = []; // Kept empty for backwards compatibility
 
 export const filterOptions = {
   categories: ["Eau de Parfum", "Extrait de Parfum", "Parfum"],
@@ -116,28 +104,28 @@ export const filterOptions = {
 export const attarBannerImg = attarImg;
 
 export const attarProducts = [
-{
-  id: 1,
-  type: "Attar",
-  name: "Oud Zaryaan",
-  notes: "A rich and timeless attar crafted with deep oud notes, blending warmth, elegance, and lasting sophistication in every drop.",
-  price: 559,
-  oldPrice: 699,
-  discount: 20,
-  rating: 4.5,
-  reviews: 0,
-  category: "Oud Attar",
-  family: "Woody",
-  size: "12",
-  image: oudZaryaanImg,
-  bottleShowcaseImage: oudZaryaanBottlesImg,
-  images: [oudZaryaanImg, oudZaryaanBannerImg],
-},
+  {
+    id: 1,
+    type: "Attar",
+    name: "Oud Zaryaan",
+    notes: "A rich and timeless attar crafted with deep oud notes, blending warmth, elegance, and lasting sophistication in every drop.",
+    price: 559,
+    oldPrice: 699,
+    discount: 20,
+    rating: 4.5,
+    reviews: 0,
+    category: "Oud Attar",
+    family: "Oud",
+    size: "12",
+    image: oudZaryaanImg,
+    bottleShowcaseImage: oudZaryaanBottlesImg,
+    images: [oudZaryaanImg, oudZaryaanBannerImg],
+  },
 ];
 
 export const attarFilterOptions = {
   categories: ["Floral Attar", "Woody Attar", "Oud Attar", "Fresh Attar", "Spicy Attar"],
-  families: ["Floral", "Woody", "Oriental", "Fresh", "Spicy"],
+  families: ["Floral", "Woody", "Oud", "Fresh", "Spicy"],
   sizes: ["6 ml (Roll On)", "12 ml", "24 ml"],
   priceRanges: [
     { label: "Under ₹999", min: 0, max: 999 },

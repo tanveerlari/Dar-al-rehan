@@ -7,7 +7,6 @@ import { ProductsSection } from "./components/ProductsSection";
 import { Features } from "./components/Features";
 import { PerfumesPage } from "./pages/PerfumesPage";
 import { AttarPage } from "./pages/AttarPage";
-import { FloraBellePage } from "./pages/FloraBellePage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { ShopPage } from "./pages/ShopPage";
 import { AboutPage } from "./pages/AboutPage";
@@ -70,7 +69,6 @@ function App() {
           <Route path="/product/:type/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
           <Route path="/cart" element={<PageWrapper><CartPage /></PageWrapper>} />
           <Route path="/checkout" element={<PageWrapper><CheckoutPage /></PageWrapper>} />
-          <Route path="/collections/flora-belle" element={<FloraBellePage />} />
 
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route

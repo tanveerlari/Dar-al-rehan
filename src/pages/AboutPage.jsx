@@ -113,7 +113,7 @@ export function AboutPage() {
                 <p className="text-[11px] text-neutral-500 tracking-wide">Pure Attar Blends</p>
               </div>
               <div>
-                <p className="font-serif text-2xl font-bold text-amber-800">24h+</p>
+                <p className="font-serif text-2xl font-bold text-amber-800">8 to 12h</p>
                 <p className="text-[11px] text-neutral-500 tracking-wide">Scent Longevity</p>
               </div>
               <div>

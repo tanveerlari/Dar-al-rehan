@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronRight, CheckCircle, LogIn, ShieldAlert, Truck, CreditCard, Banknote, ShieldCheck } from "lucide-react";
+import { ChevronRight, CheckCircle, LogIn, ShieldAlert, Truck, CreditCard, ShieldCheck } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import { useCustomerAuth } from "../components/CustomerAuthContext";
 import { useCart } from "../components/CartContext";
@@ -42,7 +42,6 @@ export function CheckoutPage() {
   });
   const [errors, setErrors] = useState({});
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("online"); // "online" | "cod"
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { checkLimit, isBlocked, blockMessage } = useRateLimiter("placeOrder");
 
@@ -98,9 +97,9 @@ export function CheckoutPage() {
         price: item.price,
       })),
       total: finalTotal,
-      payment_method: paymentDetails.method || paymentMethod,
+      payment_method: "online",
       payment_id: paymentDetails.paymentId || null,
-      payment_status: paymentDetails.status || "pending",
+      payment_status: paymentDetails.status || "paid",
     };
 
     const { error } = await supabase.from("orders").insert([orderPayload]);
@@ -113,7 +112,7 @@ export function CheckoutPage() {
     notifyAdminNewOrder(orderPayload);
   };
 
-  // Live Razorpay Payment Flow
+  // Live Razorpay Online Payment Flow
   const handleRazorpayOnlinePayment = async () => {
     const sdkLoaded = await loadRazorpaySdk();
     if (!sdkLoaded) {
@@ -184,7 +183,6 @@ export function CheckoutPage() {
 
             // Save order to Supabase
             await saveOrderToDatabase({
-              method: "online",
               paymentId: response.razorpay_payment_id,
               status: "paid",
             });
@@ -238,21 +236,7 @@ export function CheckoutPage() {
     if (!validate()) return;
 
     setIsSubmitting(true);
-
-    if (paymentMethod === "online") {
-      await handleRazorpayOnlinePayment();
-    } else {
-      // Cash on Delivery
-      try {
-        await saveOrderToDatabase({ method: "cod", status: "pending" });
-        setOrderPlaced(true);
-        clearCart();
-      } catch (err) {
-        alert("Failed to place order: " + err.message);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
+    await handleRazorpayOnlinePayment();
   };
 
   // Not logged in — block checkout
@@ -311,9 +295,7 @@ export function CheckoutPage() {
         <CheckCircle className="mx-auto h-16 w-16 text-emerald-600" />
         <h1 className="mt-4 font-serif text-3xl text-neutral-800">Thank you for your order!</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          {paymentMethod === "online"
-            ? "Payment received and verified successfully! Your order is confirmed."
-            : "We have received your order and will contact you shortly for delivery confirmation."}
+          Payment received and verified successfully! Your order is confirmed.
         </p>
         <button
           onClick={() => navigate("/shop")}
@@ -440,70 +422,28 @@ export function CheckoutPage() {
             </div>
           )}
 
-          {/* ──────────── Payment Method Selection ──────────── */}
+          {/* ──────────── Payment Method ──────────── */}
           <div className="pt-4">
-            <p className="mb-3 text-xs font-medium text-neutral-600">Payment Method</p>
-            <div className="space-y-3">
-              {/* Online Payment Option (Razorpay Live) */}
-              <label
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all ${
-                  paymentMethod === "online"
-                    ? "border-amber-600 bg-amber-50 shadow-sm"
-                    : "border-neutral-200 bg-white hover:border-neutral-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="online"
-                  checked={paymentMethod === "online"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="h-4 w-4 accent-amber-700"
-                />
-                <CreditCard className={`h-5 w-5 ${paymentMethod === "online" ? "text-amber-700" : "text-neutral-400"}`} />
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${paymentMethod === "online" ? "text-amber-900" : "text-neutral-700"}`}>
-                    Pay Online (Instant & Secure)
-                  </p>
-                  <p className="text-xs text-neutral-500">UPI, Google Pay, PhonePe, Cards, Net Banking</p>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">UPI</span>
-                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">Cards</span>
-                </div>
-              </label>
-
-              {/* COD Option */}
-              <label
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all ${
-                  paymentMethod === "cod"
-                    ? "border-amber-600 bg-amber-50 shadow-sm"
-                    : "border-neutral-200 bg-white hover:border-neutral-300"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="cod"
-                  checked={paymentMethod === "cod"}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="h-4 w-4 accent-amber-700"
-                />
-                <Banknote className={`h-5 w-5 ${paymentMethod === "cod" ? "text-amber-700" : "text-neutral-400"}`} />
-                <div>
-                  <p className={`text-sm font-medium ${paymentMethod === "cod" ? "text-amber-900" : "text-neutral-700"}`}>
-                    Cash on Delivery (COD)
-                  </p>
-                  <p className="text-xs text-neutral-500">Pay cash upon parcel delivery</p>
-                </div>
-              </label>
+            <p className="mb-2 text-xs font-medium text-neutral-600">Payment Method</p>
+            <div className="flex items-center gap-3 rounded-lg border border-amber-600 bg-amber-50 p-4 shadow-sm">
+              <CreditCard className="h-5 w-5 text-amber-700 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-950">
+                  Online Payment (100% Secure)
+                </p>
+                <p className="text-xs text-neutral-600">UPI, Google Pay, PhonePe, Paytm, Debit/Credit Cards, Net Banking</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5">
+                <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">UPI</span>
+                <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">Cards</span>
+              </div>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isBlocked || isSubmitting}
-            className="mt-6 w-full rounded-full bg-amber-700 py-3 text-xs font-semibold tracking-widest text-white transition-colors hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="mt-6 w-full rounded-full bg-amber-700 py-3.5 text-xs font-semibold tracking-widest text-white transition-colors hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
           >
             {isSubmitting ? (
               <>
@@ -511,21 +451,17 @@ export function CheckoutPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <span>PROCESSING...</span>
+                <span>OPENING PAYMENT...</span>
               </>
-            ) : paymentMethod === "online" ? (
-              `PAY NOW (₹${finalTotal.toLocaleString("en-IN")})`
             ) : (
-              `PLACE ORDER (₹${finalTotal.toLocaleString("en-IN")})`
+              `PAY NOW (₹${finalTotal.toLocaleString("en-IN")})`
             )}
           </button>
 
-          {paymentMethod === "online" && (
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-400 mt-2">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              <span>Secured by Razorpay • 256-Bit SSL Encrypted</span>
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-400 mt-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Secured by Razorpay • 256-Bit SSL Encrypted</span>
+          </div>
         </form>
 
         {/* Right: Order Summary */}
@@ -563,8 +499,8 @@ export function CheckoutPage() {
 
             <div className="flex justify-between text-xs text-neutral-600">
               <span>Payment Mode</span>
-              <span className="font-medium text-amber-800">
-                {paymentMethod === "online" ? "Online (UPI / Cards)" : "Cash on Delivery"}
+              <span className="font-semibold text-emerald-700">
+                100% Online Payment (Prepaid)
               </span>
             </div>
 
