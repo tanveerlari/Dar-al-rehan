@@ -64,8 +64,41 @@ export function CheckoutPage() {
     }
   }, [user]);
 
+  // Sanitized input handler — blocks special characters & enforces limits
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Name & City: only letters, spaces, dots, hyphens allowed
+    if (name === "name" || name === "city") {
+      const clean = value.replace(/[^a-zA-Z\s.\-']/g, "");
+      if (clean.length > 50) return;
+      setForm({ ...form, [name]: clean });
+      return;
+    }
+
+    // Phone: only digits, max 10
+    if (name === "phone") {
+      const clean = value.replace(/\D/g, "").slice(0, 10);
+      setForm({ ...form, [name]: clean });
+      return;
+    }
+
+    // Pincode: only digits, max 6
+    if (name === "pincode") {
+      const clean = value.replace(/\D/g, "").slice(0, 6);
+      setForm({ ...form, [name]: clean });
+      return;
+    }
+
+    // Address: block dangerous special chars, max 200
+    if (name === "address") {
+      const clean = value.replace(/[<>{}|\\^~`@#$%&*=+!]/g, "");
+      if (clean.length > 200) return;
+      setForm({ ...form, [name]: clean });
+      return;
+    }
+
+    setForm({ ...form, [name]: value });
   };
 
   const validate = () => {

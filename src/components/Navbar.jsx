@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +16,7 @@ import { navLinks, collectionsProducts } from "../data";
 import { useCart } from "../components/CartContext";
 import logoImg from "../assets/logo.png";
 import { useCustomerAuth } from "./CustomerAuthContext";
+import { useSupabaseProducts } from "../hooks/useSupabaseProducts";
 
 // Icon mapping for the bottom mobile nav bar
 const bottomNavIcons = {
@@ -37,14 +38,21 @@ export function Navbar() {
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const { user, openAuthModal, signOut } = useCustomerAuth();
+  const { supabaseProducts } = useSupabaseProducts();
+
+  // Merge static + Supabase products for full search coverage
+  const allSearchProducts = useMemo(
+    () => [...collectionsProducts, ...supabaseProducts],
+    [supabaseProducts]
+  );
 
   const matches =
     searchTerm.trim().length > 0
-      ? collectionsProducts
+      ? allSearchProducts
           .filter(
             (p) =>
-              p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              p.notes.toLowerCase().includes(searchTerm.toLowerCase())
+              (p.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (p.notes || "").toLowerCase().includes(searchTerm.toLowerCase())
           )
           .slice(0, 5)
       : [];
@@ -193,7 +201,9 @@ export function Navbar() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
+                    const clean = e.target.value.replace(/[^a-zA-Z0-9\s\-'.]/g, "");
+                    if (clean.length > 60) return;
+                    setSearchTerm(clean);
                     setShowResults(true);
                   }}
                   onFocus={() => setShowResults(true)}
@@ -336,7 +346,11 @@ export function Navbar() {
                     type="text"
                     autoFocus
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/[^a-zA-Z0-9\s\-'.]/g, "");
+                      if (clean.length > 60) return;
+                      setSearchTerm(clean);
+                    }}
                     onKeyDown={(e) => e.key === "Enter" && runSearch()}
                     placeholder="Search fragrances..."
                     className="w-full bg-transparent text-sm text-neutral-700 outline-none placeholder:text-neutral-400"
