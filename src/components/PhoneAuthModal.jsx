@@ -49,8 +49,17 @@ export function PhoneAuthModal() {
     setError("");
     setSuccessMsg("");
 
-    if (!fullName.trim()) {
-      setError("Please enter your full name.");
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (trimmedName.length < 2) {
+      setError("Name must be at least 2 characters long.");
+      return;
+    }
+    if (trimmedName.length > 50) {
+      setError("Name cannot exceed 50 characters.");
       return;
     }
 
@@ -212,7 +221,8 @@ export function PhoneAuthModal() {
                 <div className="flex rounded-lg border border-neutral-300 bg-white focus-within:border-amber-600 focus-within:ring-1 focus-within:ring-amber-600 transition-all overflow-hidden shadow-sm">
                   <input
                     type="text"
-                    placeholder="Enter your name (e.g. Rehan Patel)"
+                    maxLength={50}
+                    placeholder="Enter your name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 font-medium"
@@ -247,7 +257,7 @@ export function PhoneAuthModal() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !fullName.trim() || phoneNumber.length < 10}
+                disabled={loading || fullName.trim().length < 2 || phoneNumber.length < 10}
                 className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-700 to-amber-800 py-3 text-xs font-semibold tracking-widest text-white shadow-md transition-all hover:from-amber-800 hover:to-amber-900 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
