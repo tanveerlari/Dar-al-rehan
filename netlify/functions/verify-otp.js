@@ -25,9 +25,10 @@ export async function handler(event) {
   }
 
   try {
-    const { phone, otp } = JSON.parse(event.body || "{}");
+    const { phone, otp, name } = JSON.parse(event.body || "{}");
     const cleanPhone = String(phone || "").replace(/\D/g, "").slice(-10);
     const cleanOtp = String(otp || "").trim();
+    const customerName = String(name || "").trim();
 
     if (cleanPhone.length !== 10 || cleanOtp.length !== 6) {
       return {
@@ -78,13 +79,18 @@ export async function handler(event) {
     // Success! Delete OTP
     await supabase.from("otp_codes").delete().eq("id", record.id);
 
-    // Upsert verified customer
+    // Upsert verified customer with name
+    const customerPayload = {
+      phone: `+91${cleanPhone}`,
+      status: "verified",
+      last_verified_at: new Date().toISOString(),
+    };
+    if (customerName) {
+      customerPayload.name = customerName;
+    }
+
     await supabase.from("verified_customers").upsert(
-      {
-        phone: `+91${cleanPhone}`,
-        status: "verified",
-        last_verified_at: new Date().toISOString(),
-      },
+      customerPayload,
       { onConflict: "phone" }
     );
 

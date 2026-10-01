@@ -13,6 +13,7 @@ export function PhoneAuthModal() {
   } = useCustomerAuth();
 
   const [step, setStep] = useState("phone"); // "phone" | "otp"
+  const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export function PhoneAuthModal() {
   useEffect(() => {
     if (isAuthModalOpen) {
       setStep("phone");
+      setFullName("");
       setPhoneNumber("");
       setOtpValues(["", "", "", "", "", ""]);
       setError("");
@@ -46,6 +48,11 @@ export function PhoneAuthModal() {
     if (e) e.preventDefault();
     setError("");
     setSuccessMsg("");
+
+    if (!fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
 
     const cleaned = phoneNumber.trim().replace(/\D/g, "");
     if (cleaned.length < 10) {
@@ -116,7 +123,7 @@ export function PhoneAuthModal() {
     }
 
     setLoading(true);
-    const result = await verifyPhoneOtp(phoneNumber, token);
+    const result = await verifyPhoneOtp(phoneNumber, token, fullName);
     setLoading(false);
 
     if (!result.success) {
@@ -167,7 +174,7 @@ export function PhoneAuthModal() {
               DAR AL REHAN
             </h2>
             <p className="mt-1 text-xs text-amber-800/80 tracking-widest font-medium uppercase">
-              {step === "phone" ? "Mobile Number Verification" : "Enter Verification Code"}
+              {step === "phone" ? "Enter Details & Verify" : "Enter Verification Code"}
             </p>
           </div>
 
@@ -194,12 +201,30 @@ export function PhoneAuthModal() {
             </motion.div>
           )}
 
-          {/* ──────────────── STEP 1: ENTER PHONE ──────────────── */}
+          {/* ──────────────── STEP 1: ENTER NAME & PHONE ──────────────── */}
           {step === "phone" ? (
-            <form onSubmit={handleSendOtp} className="mt-6 space-y-5">
+            <form onSubmit={handleSendOtp} className="mt-6 space-y-4">
+              {/* Full Name Input */}
               <div>
                 <label className="block text-xs font-semibold tracking-wider text-neutral-700 mb-1.5 uppercase">
-                  Mobile Number
+                  Full Name <span className="text-amber-600">*</span>
+                </label>
+                <div className="flex rounded-lg border border-neutral-300 bg-white focus-within:border-amber-600 focus-within:ring-1 focus-within:ring-amber-600 transition-all overflow-hidden shadow-sm">
+                  <input
+                    type="text"
+                    placeholder="Enter your name (e.g. Rehan Patel)"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 font-medium"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Number Input */}
+              <div>
+                <label className="block text-xs font-semibold tracking-wider text-neutral-700 mb-1.5 uppercase">
+                  Mobile Number <span className="text-amber-600">*</span>
                 </label>
                 <div className="flex rounded-lg border border-neutral-300 bg-white focus-within:border-amber-600 focus-within:ring-1 focus-within:ring-amber-600 transition-all overflow-hidden shadow-sm">
                   <span className="flex items-center bg-amber-50/70 px-3.5 text-sm font-semibold text-amber-900 border-r border-neutral-200">
@@ -211,8 +236,7 @@ export function PhoneAuthModal() {
                     placeholder="98765 43210"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                    className="w-full px-3.5 py-3 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 font-medium"
-                    autoFocus
+                    className="w-full px-3.5 py-2.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 font-medium"
                   />
                 </div>
                 <p className="mt-1.5 text-[11px] text-neutral-500">
@@ -223,7 +247,7 @@ export function PhoneAuthModal() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || phoneNumber.length < 10}
+                disabled={loading || !fullName.trim() || phoneNumber.length < 10}
                 className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-700 to-amber-800 py-3 text-xs font-semibold tracking-widest text-white shadow-md transition-all hover:from-amber-800 hover:to-amber-900 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (

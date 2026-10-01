@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
-import { Phone, CheckCircle2, RefreshCw, MessageCircle } from "lucide-react";
+import { Phone, CheckCircle2, RefreshCw, MessageCircle, User } from "lucide-react";
 
 export function AdminCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -85,8 +85,9 @@ export function AdminCustomers() {
       ) : (
         <div className="overflow-hidden rounded-md border border-neutral-200 bg-white">
           {/* Table Header */}
-          <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+          <div className="grid grid-cols-[auto_1.2fr_1fr_1fr_auto] gap-4 border-b border-neutral-100 bg-neutral-50 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
             <span>#</span>
+            <span>Customer Name</span>
             <span>Mobile Number</span>
             <span>Verified At</span>
             <span>Action</span>
@@ -96,30 +97,45 @@ export function AdminCustomers() {
           {customers.map((customer, index) => (
             <div
               key={customer.id}
-              className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-4 border-b border-neutral-100 px-5 py-3.5 last:border-0 hover:bg-neutral-50/60 transition-colors"
+              className="grid grid-cols-[auto_1.2fr_1fr_1fr_auto] items-center gap-4 border-b border-neutral-100 px-5 py-3.5 last:border-0 hover:bg-neutral-50/60 transition-colors"
             >
               {/* Index */}
               <span className="text-xs font-medium text-neutral-400">{index + 1}</span>
 
-              {/* Phone Number */}
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800">
-                  {customer.phone?.slice(-2) || "?"}
+              {/* Customer Name */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-900 uppercase">
+                  {customer.name ? (
+                    customer.name.trim().charAt(0)
+                  ) : (
+                    <User className="h-4 w-4 text-amber-700" />
+                  )}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-neutral-800">{customer.phone}</p>
-                  <div className="mt-0.5 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                    <span className="text-[10px] font-medium text-emerald-700">
-                      OTP Verified
-                    </span>
-                  </div>
+                  <p className="text-sm font-semibold text-neutral-800">
+                    {customer.name || "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <p className="text-sm font-medium text-neutral-700">{customer.phone}</p>
+                <div className="mt-0.5 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[10px] font-medium text-emerald-700">
+                    OTP Verified
+                  </span>
                 </div>
               </div>
 
               {/* Date */}
               <p className="text-xs text-neutral-500">
-                {customer.created_at ? formatDate(customer.created_at) : "—"}
+                {customer.last_verified_at
+                  ? formatDate(customer.last_verified_at)
+                  : customer.created_at
+                  ? formatDate(customer.created_at)
+                  : "—"}
               </p>
 
               {/* WhatsApp Button */}

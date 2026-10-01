@@ -62,7 +62,7 @@ export async function sendOtpToPhone(rawPhone) {
  * @param {string} rawPhone - 10-digit phone number
  * @param {string} enteredOtp - 6-digit OTP string
  */
-export async function verifyOtpCode(rawPhone, enteredOtp) {
+export async function verifyOtpCode(rawPhone, enteredOtp, fullName = "") {
   const cleaned = rawPhone.replace(/\D/g, "").slice(-10);
 
   if (!enteredOtp || enteredOtp.length !== 6) {
@@ -75,7 +75,7 @@ export async function verifyOtpCode(rawPhone, enteredOtp) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ phone: cleaned, otp: enteredOtp }),
+      body: JSON.stringify({ phone: cleaned, otp: enteredOtp, name: fullName }),
     });
 
     const data = await response.json();

@@ -92,16 +92,17 @@ export function CustomerAuthProvider({ children }) {
   /**
    * Verify Phone OTP
    */
-  const verifyPhoneOtp = async (phoneNumber, otp) => {
-    const res = await verifyOtpCode(phoneNumber, otp);
+  const verifyPhoneOtp = async (phoneNumber, otp, fullName = "") => {
+    const res = await verifyOtpCode(phoneNumber, otp, fullName);
     if (res.success) {
       const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
+      const displayName = fullName.trim() || `+91 ${cleanPhone}`;
       const phoneUser = {
         id: `phone_${cleanPhone}`,
         phone: `+91${cleanPhone}`,
         isPhoneVerified: true,
         user_metadata: {
-          full_name: `+91 ${cleanPhone}`,
+          full_name: displayName,
         },
       };
 
@@ -112,13 +113,14 @@ export function CustomerAuthProvider({ children }) {
       // 📥 Log verified customer to Supabase for Admin records
       supabase
         .from("verified_customers")
-        .insert([
+        .upsert([
           {
             phone: `+91${cleanPhone}`,
-            created_at: new Date().toISOString(),
+            name: fullName.trim() || null,
             status: "verified",
+            last_verified_at: new Date().toISOString(),
           },
-        ])
+        ], { onConflict: "phone" })
         .then(({ error }) => {
           if (error) {
             console.warn("[VerifiedCustomers] Supabase log note:", error.message);
