@@ -221,7 +221,7 @@ export function PhoneAuthModal() {
                 <div className="flex rounded-lg border border-neutral-300 bg-white focus-within:border-amber-600 focus-within:ring-1 focus-within:ring-amber-600 transition-all overflow-hidden shadow-sm">
                   <input
                     type="text"
-                    maxLength={50}
+                    maxLength={40}
                     placeholder="Enter your name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
