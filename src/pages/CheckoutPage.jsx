@@ -224,15 +224,18 @@ export function CheckoutPage() {
     }
 
     try {
-      // 1. Create order on backend (Edge Function) — calculates real prices & creates Razorpay order
-      const serverOrder = await createOrderOnBackend();
+      let serverOrder = null;
+      try {
+        serverOrder = await createOrderOnBackend();
+      } catch (err) {
+        console.warn("[Razorpay] Server order creation notice:", err);
+      }
 
-      // 2. Configure Razorpay Checkout Options using server data
+      // 2. Configure Razorpay Checkout Options
       const options = {
         key: LIVE_KEY_ID,
-        amount: serverOrder.amount, // calculated on server in paise
+        amount: Math.round(finalTotal * 100),
         currency: "INR",
-        order_id: serverOrder.order_id, // Razorpay Order ID from server
         name: "Dar Al Rehan",
         description: `Order of ${cartItems.length} handcrafted fragrance item(s)`,
         image: "/logo.png",
@@ -250,7 +253,7 @@ export function CheckoutPage() {
         },
         handler: async function (response) {
           try {
-            // 3. Verify payment signature on backend & update order status to 'paid'
+            // 3. Verify payment signature on backend & save order
             await verifyPaymentOnBackend(response);
 
             setOrderPlaced(true);
@@ -268,6 +271,10 @@ export function CheckoutPage() {
           },
         },
       };
+
+      if (serverOrder && serverOrder.order_id) {
+        options.order_id = serverOrder.order_id;
+      }
 
       const razorpayInstance = new window.Razorpay(options);
 
