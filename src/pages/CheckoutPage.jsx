@@ -135,20 +135,18 @@ export function CheckoutPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Helper to create order via secure backend Edge Function
-  // Backend calculates real prices from DB — prevents price manipulation
+  // Helper to create order via secure Netlify backend function
   const createOrderOnBackend = async () => {
-    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-order`, {
+    const response = await fetch("/api/create-order", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        items: cartItems.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-        })),
+        amount: Math.round(finalTotal * 100),
+        currency: "INR",
+        receipt: `rcpt_${Date.now()}`,
+        items: cartItems,
         name: form.name,
         phone: form.phone,
         address: form.address,
@@ -160,34 +158,56 @@ export function CheckoutPage() {
 
     const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "Failed to create order. Please try again.");
+    if (!response.ok || (!data.success && !data.order_id)) {
+      throw new Error(data.message || data.error || "Failed to create order. Please try again.");
     }
 
-    return data; // { order_id, amount, order_db_id }
+    return data; // { order_id, amount }
   };
 
-  // Verify payment signature via secure backend Edge Function
-  const verifyPaymentOnBackend = async (razorpayResponse, orderDbId) => {
-    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/verify-payment`, {
+  // Verify payment signature via Netlify function
+  const verifyPaymentOnBackend = async (razorpayResponse) => {
+    const response = await fetch("/api/verify-payment", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         razorpay_order_id: razorpayResponse.razorpay_order_id,
         razorpay_payment_id: razorpayResponse.razorpay_payment_id,
         razorpay_signature: razorpayResponse.razorpay_signature,
-        order_db_id: orderDbId,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      throw new Error(data.message || "Payment verification failed.");
+      throw new Error(data.message || data.error || "Payment verification failed.");
     }
+
+    // Save order in Supabase after successful payment verification
+    const orderPayload = {
+      name: form.name,
+      phone: form.phone,
+      address: form.address,
+      city: form.city,
+      pincode: form.pincode,
+      user_id: isUuid(user?.id) ? user.id : null,
+      items: cartItems.map((item) => ({
+        name: item.name,
+        type: item.type,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      total: finalTotal,
+      payment_method: "online",
+      payment_id: razorpayResponse.razorpay_payment_id,
+      payment_status: "paid",
+      created_at: new Date().toISOString(),
+    };
+
+    await supabase.from("orders").insert([orderPayload]);
+    notifyAdminNewOrder(orderPayload);
 
     return data;
   };
@@ -231,7 +251,7 @@ export function CheckoutPage() {
         handler: async function (response) {
           try {
             // 3. Verify payment signature on backend & update order status to 'paid'
-            await verifyPaymentOnBackend(response, serverOrder.order_db_id);
+            await verifyPaymentOnBackend(response);
 
             setOrderPlaced(true);
             clearCart();
