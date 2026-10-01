@@ -5,7 +5,9 @@ import { useCustomerAuth } from "../../components/CustomerAuthContext";
 import { Lock, ShieldAlert, Shield } from "lucide-react";
 import { useRateLimiter } from "../../hooks/useRateLimiter";
 
-const ADMIN_EMAILS = ["rehanpatel346@gmail.com", "laritanveer55@gmail.com"];
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "rehanpatel346@gmail.com,laritanveer55@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase());
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIME = 15 * 60 * 1000; // 15 Minutes
 

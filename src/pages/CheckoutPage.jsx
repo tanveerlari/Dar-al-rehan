@@ -8,7 +8,10 @@ import { useRateLimiter } from "../hooks/useRateLimiter";
 import { getDeliveryDetails } from "../utils/deliveryCalculator";
 import { notifyAdminNewOrder } from "../utils/orderNotification";
 
-const LIVE_KEY_ID = "rzp_live_ThsECEbsHQb6Vn";
+const LIVE_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL
+  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
+  : "";
 
 const isUuid = (value) =>
   typeof value === "string" &&
@@ -16,14 +19,32 @@ const isUuid = (value) =>
 
 function loadRazorpaySdk() {
   return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+
     if (window.Razorpay) {
       resolve(true);
       return;
     }
+
+    if (!window.isSecureContext) {
+      console.warn("Razorpay checkout requires a secure browser context.");
+      resolve(false);
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
     script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
+    script.onerror = () => {
+      console.warn(
+        "Razorpay checkout.js failed to load. This is usually caused by an ad blocker, privacy extension, or browser policy blocking the script."
+      );
+      resolve(false);
+    };
     document.body.appendChild(script);
   });
 }
@@ -114,76 +135,84 @@ export function CheckoutPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Helper to save order in Supabase
-  const saveOrderToDatabase = async (paymentDetails = {}) => {
-    const orderPayload = {
-      name: form.name,
-      phone: form.phone,
-      address: form.address,
-      city: form.city,
-      pincode: form.pincode,
-      user_id: isUuid(user?.id) ? user.id : null,
-      items: cartItems.map((item) => ({
-        name: item.name,
-        type: item.type,
-        quantity: item.quantity,
-        price: item.price,
-      })),
-      total: finalTotal,
-      payment_method: "online",
-      payment_id: paymentDetails.paymentId || null,
-      payment_status: paymentDetails.status || "paid",
-    };
+  // Helper to create order via secure backend Edge Function
+  // Backend calculates real prices from DB — prevents price manipulation
+  const createOrderOnBackend = async () => {
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        items: cartItems.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity,
+        })),
+        name: form.name,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        pincode: form.pincode,
+        user_id: isUuid(user?.id) ? user.id : null,
+      }),
+    });
 
-    const { error } = await supabase.from("orders").insert([orderPayload]);
+    const data = await response.json();
 
-    if (error) {
-      throw error;
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to create order. Please try again.");
     }
 
-    // 🔔 Instant Notification to Admin (SMS)
-    notifyAdminNewOrder(orderPayload);
+    return data; // { order_id, amount, order_db_id }
+  };
+
+  // Verify payment signature via secure backend Edge Function
+  const verifyPaymentOnBackend = async (razorpayResponse, orderDbId) => {
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/verify-payment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        razorpay_order_id: razorpayResponse.razorpay_order_id,
+        razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+        razorpay_signature: razorpayResponse.razorpay_signature,
+        order_db_id: orderDbId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Payment verification failed.");
+    }
+
+    return data;
   };
 
   // Live Razorpay Online Payment Flow
   const handleRazorpayOnlinePayment = async () => {
     const sdkLoaded = await loadRazorpaySdk();
     if (!sdkLoaded) {
-      alert("Failed to load Razorpay payment gateway. Please check your connection.");
+      alert(
+        "Razorpay could not be loaded in this browser. Please disable any ad blocker/privacy extension, allow pop-ups, and try again in Chrome or Edge."
+      );
       setIsSubmitting(false);
       return;
     }
 
     try {
-      let serverOrderId = null;
+      // 1. Create order on backend (Edge Function) — calculates real prices & creates Razorpay order
+      const serverOrder = await createOrderOnBackend();
 
-      // 1. Create Order on Backend
-      try {
-        const createRes = await fetch("/api/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: Math.round(finalTotal * 100), // in paise
-            currency: "INR",
-            receipt: `rcpt_${Date.now()}`,
-          }),
-        });
-
-        if (createRes.ok) {
-          const data = await createRes.json();
-          if (data.order_id) {
-            serverOrderId = data.order_id;
-          }
-        }
-      } catch (err) {
-        console.warn("[Razorpay] Server order creation notice:", err);
-      }
-
-      // 2. Configure Razorpay Standard Checkout Options
+      // 2. Configure Razorpay Checkout Options using server data
       const options = {
         key: LIVE_KEY_ID,
-        amount: Math.round(finalTotal * 100),
+        amount: serverOrder.amount, // calculated on server in paise
         currency: "INR",
+        order_id: serverOrder.order_id, // Razorpay Order ID from server
         name: "Dar Al Rehan",
         description: `Order of ${cartItems.length} handcrafted fragrance item(s)`,
         image: "/logo.png",
@@ -201,30 +230,14 @@ export function CheckoutPage() {
         },
         handler: async function (response) {
           try {
-            // Optional verify call
-            if (response.razorpay_signature && response.razorpay_order_id) {
-              await fetch("/api/verify-payment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              });
-            }
-
-            // Save order to Supabase
-            await saveOrderToDatabase({
-              paymentId: response.razorpay_payment_id,
-              status: "paid",
-            });
+            // 3. Verify payment signature on backend & update order status to 'paid'
+            await verifyPaymentOnBackend(response, serverOrder.order_db_id);
 
             setOrderPlaced(true);
             clearCart();
           } catch (err) {
-            console.error("Order save error:", err);
-            alert(`Payment was successful (${response.razorpay_payment_id}), but order saving encountered an error. Please contact support.`);
+            console.error("Payment verification error:", err);
+            alert(err.message || "Payment verification failed. Please contact support if debited.");
           } finally {
             setIsSubmitting(false);
           }
@@ -235,10 +248,6 @@ export function CheckoutPage() {
           },
         },
       };
-
-      if (serverOrderId) {
-        options.order_id = serverOrderId;
-      }
 
       const razorpayInstance = new window.Razorpay(options);
 

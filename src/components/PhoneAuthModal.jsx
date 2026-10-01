@@ -105,7 +105,7 @@ export function PhoneAuthModal() {
     }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     if (e) e.preventDefault();
     setError("");
     const token = otpValues.join("");
@@ -116,7 +116,7 @@ export function PhoneAuthModal() {
     }
 
     setLoading(true);
-    const result = verifyPhoneOtp(phoneNumber, token);
+    const result = await verifyPhoneOtp(phoneNumber, token);
     setLoading(false);
 
     if (!result.success) {

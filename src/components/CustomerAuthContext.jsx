@@ -4,7 +4,9 @@ import { supabase } from "../supabaseClient";
 import { rateLimiter } from "../utils/rateLimiter";
 import { sendOtpToPhone, verifyOtpCode } from "../utils/smsService";
 
-const ADMIN_EMAILS = ["rehanpatel346@gmail.com", "laritanveer55@gmail.com"];
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "rehanpatel346@gmail.com,laritanveer55@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase());
 const CustomerAuthContext = createContext();
 
 export function CustomerAuthProvider({ children }) {
@@ -90,8 +92,8 @@ export function CustomerAuthProvider({ children }) {
   /**
    * Verify Phone OTP
    */
-  const verifyPhoneOtp = (phoneNumber, otp) => {
-    const res = verifyOtpCode(phoneNumber, otp);
+  const verifyPhoneOtp = async (phoneNumber, otp) => {
+    const res = await verifyOtpCode(phoneNumber, otp);
     if (res.success) {
       const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
       const phoneUser = {

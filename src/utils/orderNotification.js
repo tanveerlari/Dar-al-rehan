@@ -1,45 +1,40 @@
 /**
- * 📱 Admin Order SMS Alert Service
- * Sends real instant SMS directly to Admin's mobile number (+91 8983284487) via Fast2SMS
+ * 📱 Admin Order SMS Alert Service — Secure Backend-Powered
+ * SMS notifications are now sent through a secure Edge Function.
+ * No API keys or admin phone numbers are exposed in the frontend.
  */
 
-const ADMIN_PHONE = "8983284487"; // Rehan Patel (Admin Mobile)
-const FAST2SMS_API_KEY =
-  import.meta.env.VITE_FAST2SMS_API_KEY ||
-  "sX32OiRVNwufQywsdV7QZ5R0gCGZH6Ft05E4FQLPqbL0i2zLIpfWLpYa4ZU4";
+const SUPABASE_FUNCTIONS_URL =
+  import.meta.env.VITE_SUPABASE_URL
+    ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
+    : "";
 
 export async function notifyAdminNewOrder(order) {
   try {
-    const itemsSummary = (order.items || [])
-      .map((item) => `${item.name}(${item.quantity})`)
-      .join(", ");
-
-    const smsMessage = `New Order on Dar Al Rehan! Customer: ${order.name}, Phone: ${order.phone}, Items: ${itemsSummary}, Total: Rs.${order.total}, City: ${order.city}. Check Admin Panel.`;
-
-    const response = await fetch("/api/fast2sms/dev/bulkV2", {
+    const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/notify-admin`, {
       method: "POST",
       headers: {
-        authorization: FAST2SMS_API_KEY,
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
-        route: "q",
-        message: smsMessage,
-        language: "english",
-        flash: 0,
-        numbers: ADMIN_PHONE,
+        name: order.name,
+        phone: order.phone,
+        items: order.items,
+        total: order.total,
+        city: order.city,
       }),
     });
 
     const data = await response.json();
-    console.log("[Admin SMS] Order Alert Status:", data);
 
-    if (data.return === true || data.status_code === 200) {
-      console.log(`[Admin SMS] Order alert sent successfully to Admin (+91 ${ADMIN_PHONE})`);
+    if (data.success) {
+      console.log("[Admin SMS] Order alert sent successfully via backend.");
     } else {
-      console.warn("[Admin SMS] Fast2SMS Gateway notice:", data.message);
+      console.warn("[Admin SMS] Backend notification notice:", data.message);
     }
   } catch (err) {
-    console.error("[Admin SMS] Error sending order alert SMS:", err);
+    // Non-blocking — order is already saved, SMS failure shouldn't break flow
+    console.error("[Admin SMS] Error sending order alert:", err);
   }
 }
