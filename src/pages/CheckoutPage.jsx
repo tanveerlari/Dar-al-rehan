@@ -8,7 +8,7 @@ import { useRateLimiter } from "../hooks/useRateLimiter";
 import { getDeliveryDetails } from "../utils/deliveryCalculator";
 import { notifyAdminNewOrder } from "../utils/orderNotification";
 
-const LIVE_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || "";
+const LIVE_KEY_ID = "rzp_live_ThsECEbsHQb6Vn";
 const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL
   ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
   : "";

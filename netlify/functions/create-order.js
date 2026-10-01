@@ -1,4 +1,4 @@
-const KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || "rzp_live_ThsECEbsHQb6Vn";
+const KEY_ID = "rzp_live_ThsECEbsHQb6Vn";
 const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "EwCc9GM2b8whwENcHGSrEZU7";
 
 export async function handler(event) {
