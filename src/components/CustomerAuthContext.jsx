@@ -7,6 +7,11 @@ import { sendOtpToPhone, verifyOtpCode } from "../utils/smsService";
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "rehanpatel346@gmail.com,laritanveer55@gmail.com")
   .split(",")
   .map((e) => e.trim().toLowerCase());
+
+const ADMIN_PHONES = (import.meta.env.VITE_ADMIN_PHONES || "8983284487")
+  .split(",")
+  .map((p) => p.replace(/\D/g, "").slice(-10));
+
 const CustomerAuthContext = createContext();
 
 export function CustomerAuthProvider({ children }) {
@@ -22,6 +27,10 @@ export function CustomerAuthProvider({ children }) {
     if (savedPhoneUser) {
       try {
         const parsed = JSON.parse(savedPhoneUser);
+        const cleanPhone = (parsed.phone || "").replace(/\D/g, "").slice(-10);
+        if (ADMIN_PHONES.includes(cleanPhone)) {
+          parsed.isAdmin = true;
+        }
         setUser(parsed);
       } catch {
         localStorage.removeItem("dar_al_rehan_customer");
@@ -96,13 +105,16 @@ export function CustomerAuthProvider({ children }) {
     const res = await verifyOtpCode(phoneNumber, otp, fullName);
     if (res.success) {
       const cleanPhone = phoneNumber.replace(/\D/g, "").slice(-10);
-      const displayName = fullName.trim() || `+91 ${cleanPhone}`;
+      const isUserAdmin = ADMIN_PHONES.includes(cleanPhone);
+      const displayName = fullName.trim() || (isUserAdmin ? "Rehan Patel (Admin)" : `+91 ${cleanPhone}`);
       const phoneUser = {
         id: `phone_${cleanPhone}`,
         phone: `+91${cleanPhone}`,
         isPhoneVerified: true,
+        isAdmin: isUserAdmin,
         user_metadata: {
           full_name: displayName,
+          is_admin: isUserAdmin,
         },
       };
 
@@ -116,7 +128,7 @@ export function CustomerAuthProvider({ children }) {
         .upsert([
           {
             phone: `+91${cleanPhone}`,
-            name: fullName.trim() || null,
+            name: fullName.trim() || (isUserAdmin ? "Rehan Patel" : null),
             status: "verified",
             last_verified_at: new Date().toISOString(),
           },
@@ -127,7 +139,9 @@ export function CustomerAuthProvider({ children }) {
           }
         });
 
-      if (authRedirectPath && authRedirectPath !== "/") {
+      if (isUserAdmin) {
+        navigate("/admin/dashboard");
+      } else if (authRedirectPath && authRedirectPath !== "/") {
         navigate(authRedirectPath);
       }
     }

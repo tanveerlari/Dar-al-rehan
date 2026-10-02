@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../components/AdminAuthContext";
 import { useCustomerAuth } from "../../components/CustomerAuthContext";
-import { Lock, ShieldAlert, Shield } from "lucide-react";
+import { Lock, ShieldAlert, Shield, Phone } from "lucide-react";
 import { useRateLimiter } from "../../hooks/useRateLimiter";
 
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "rehanpatel346@gmail.com,laritanveer55@gmail.com")
@@ -13,7 +13,7 @@ const LOCKOUT_TIME = 15 * 60 * 1000; // 15 Minutes
 
 export function AdminLogin() {
   const { login } = useAdminAuth();
-  const { signInWithGoogle } = useCustomerAuth();
+  const { signInWithGoogle, openAuthModal } = useCustomerAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -148,9 +148,19 @@ export function AdminLogin() {
             <div className="w-full border-t border-neutral-200" />
           </div>
           <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-neutral-400 font-medium">
-            Or Quick Admin Entry
+            Or Admin Entry
           </span>
         </div>
+
+        {/* Admin Mobile OTP Entry */}
+        <button
+          type="button"
+          onClick={() => openAuthModal("/admin/dashboard")}
+          className="mb-3 flex w-full items-center justify-center gap-2.5 rounded-full border border-amber-600/40 bg-amber-50/80 py-2.5 text-xs font-semibold text-amber-900 shadow-sm transition-all hover:bg-amber-100 hover:border-amber-600"
+        >
+          <Phone className="h-3.5 w-3.5 text-amber-700" />
+          <span>Login with Mobile OTP (8983284487)</span>
+        </button>
 
         <button
           type="button"

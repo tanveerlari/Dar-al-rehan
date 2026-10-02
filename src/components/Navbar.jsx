@@ -11,6 +11,7 @@ import {
   Droplet,
   LayoutGrid,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 import { navLinks, collectionsProducts } from "../data";
 import { useCart } from "../components/CartContext";
@@ -297,13 +298,25 @@ export function Navbar() {
               </button>
 
               {user && showUserMenu && (
-                <div className="absolute right-0 top-full z-20 mt-2 w-48 rounded-md border border-neutral-200 bg-white py-2 shadow-lg">
+                <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-md border border-neutral-200 bg-white py-2 shadow-lg">
                   <p className="truncate px-4 py-1 text-sm font-semibold text-neutral-800">
                     {user.phone || user.user_metadata?.full_name || user.email}
                   </p>
                   <p className="truncate px-4 pb-2 text-[11px] font-medium text-amber-700">
-                    {user.phone ? "Verified Mobile Customer" : (user.email || "Customer")}
+                    {user.isAdmin ? "👑 Admin Access" : user.phone ? "Verified Mobile Customer" : (user.email || "Customer")}
                   </p>
+
+                  {user.isAdmin && (
+                    <Link
+                      to="/admin/dashboard"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-2 border-t border-neutral-100 bg-amber-50/70 px-4 py-2 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 text-amber-700" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
+
                   <button
                     onClick={() => {
                       signOut();
