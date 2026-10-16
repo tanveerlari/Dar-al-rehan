@@ -3,7 +3,7 @@ import { rateLimiter } from "../utils/rateLimiter";
 
 const CartContext = createContext();
 const STORAGE_KEY = "dar-al-rehan-cart";
-const getProductKey = (product) => `${product.routeType || product.type}-${product.id}`;
+const getProductKey = (product) => `${product.routeType || product.type}-${product.id}-${product.selectedSize || 'default'}`;
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(() => {
@@ -56,9 +56,14 @@ export function CartProvider({ children }) {
     showToast(product);
   };
 
-  const removeFromCart = (type, id) => {
+  const removeFromCart = (type, id, selectedSize) => {
     setCartItems((prev) => {
-      const updated = prev.filter((item) => getProductKey(item) !== `${type}-${id}`);
+      const updated = prev.filter((item) => {
+        if (selectedSize !== undefined) {
+          return getProductKey(item) !== `${type}-${id}-${selectedSize || 'default'}`;
+        }
+        return !getProductKey(item).startsWith(`${type}-${id}-`) && getProductKey(item) !== `${type}-${id}`;
+      });
       if (updated.length === 0) {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -66,10 +71,15 @@ export function CartProvider({ children }) {
     });
   };
 
-  const updateQuantity = (type, id, quantity) => {
+  const updateQuantity = (type, id, quantity, selectedSize) => {
     if (quantity < 1) return;
     setCartItems((prev) =>
-      prev.map((item) => (getProductKey(item) === `${type}-${id}` ? { ...item, quantity } : item))
+      prev.map((item) => {
+        const matches = selectedSize !== undefined
+          ? getProductKey(item) === `${type}-${id}-${selectedSize || 'default'}`
+          : (getProductKey(item) === `${type}-${id}-${item.selectedSize || 'default'}` || getProductKey(item) === `${type}-${id}`);
+        return matches ? { ...item, quantity } : item;
+      })
     );
   };
 

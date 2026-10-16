@@ -196,6 +196,7 @@ export function CheckoutPage() {
       items: cartItems.map((item) => ({
         name: item.name,
         type: item.type,
+        size: item.size || item.selectedSize || "",
         quantity: item.quantity,
         price: item.price,
       })),

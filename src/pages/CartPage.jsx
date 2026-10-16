@@ -88,7 +88,7 @@ export function CartPage() {
             <div className="flex-1 space-y-4">
               {cartItems.map((item) => (
                 <div 
-                  key={`${item.routeType || item.type}-${item.id}`} 
+                  key={`${item.routeType || item.type}-${item.id}-${item.selectedSize || 'default'}`} 
                   className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-amber-950/10 bg-white p-4 sm:p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-amber-900/25"
                 >
                   <div className="flex items-center gap-4">
@@ -124,7 +124,7 @@ export function CartPage() {
                     {/* Quantity Selector */}
                     <div className="flex items-center rounded-full border border-neutral-300 bg-neutral-50/60 px-1 py-0.5 shadow-inner">
                       <button
-                        onClick={() => updateQuantity(item.routeType || item.type, item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.routeType || item.type, item.id, item.quantity - 1, item.selectedSize)}
                         className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-white hover:text-amber-800"
                         title="Decrease"
                       >
@@ -134,7 +134,7 @@ export function CartPage() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.routeType || item.type, item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.routeType || item.type, item.id, item.quantity + 1, item.selectedSize)}
                         className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-white hover:text-amber-800"
                         title="Increase"
                       >
@@ -156,7 +156,7 @@ export function CartPage() {
 
                     {/* Remove Button */}
                     <button
-                      onClick={() => removeFromCart(item.routeType || item.type, item.id)}
+                      onClick={() => removeFromCart(item.routeType || item.type, item.id, item.selectedSize)}
                       className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600"
                       title="Remove item"
                     >

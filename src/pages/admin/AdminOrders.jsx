@@ -103,7 +103,7 @@ export function AdminOrders() {
               <div className="mb-3 flex flex-wrap gap-2">
                 {order.items?.map((item, i) => (
                   <span key={i} className="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
-                    {item.name} ({item.type}) × {item.quantity} — ₹{item.price}
+                    {item.name} ({item.type}{item.size ? ` • ${item.size}` : ""}) × {item.quantity} — ₹{item.price}
                   </span>
                 ))}
               </div>

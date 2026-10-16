@@ -9,6 +9,8 @@ const emptyForm = {
   description: "",
   price: "",
   old_price: "",
+  price_12ml: "",
+  old_price_12ml: "",
   family: "",
   size: "",
   image: "",
@@ -31,6 +33,7 @@ export function AdminProducts() {
   const [editingId, setEditingId] = useState(null);
 
   const discount = calculateDiscount(form.price, form.old_price);
+  const discount12ml = calculateDiscount(form.price_12ml, form.old_price_12ml);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -75,6 +78,8 @@ export function AdminProducts() {
       ...form,
       price: Number(form.price),
       old_price: form.old_price ? Number(form.old_price) : null,
+      price_12ml: form.price_12ml ? Number(form.price_12ml) : null,
+      old_price_12ml: form.old_price_12ml ? Number(form.old_price_12ml) : null,
       discount: calculateDiscount(form.price, form.old_price),
     };
 
@@ -105,6 +110,8 @@ export function AdminProducts() {
       description: product.description || "",
       price: product.price || "",
       old_price: product.old_price || "",
+      price_12ml: product.price_12ml || "",
+      old_price_12ml: product.old_price_12ml || "",
       family: product.family || "",
       size: product.size || "",
       image: product.image || "",
@@ -171,6 +178,36 @@ export function AdminProducts() {
               {discount > 0 ? `${discount}% OFF` : "—"}
             </span>
           </div>
+
+          {form.type === "Attar" && (
+            <>
+              <div className="col-span-2 md:col-span-3 mt-2 mb-1">
+                <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">📦 12ml Variant Pricing (Attar Only)</p>
+              </div>
+              <input
+                name="price_12ml"
+                value={form.price_12ml}
+                onChange={handleChange}
+                placeholder="12ml Price (₹)"
+                type="number"
+                className="rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+              <input
+                name="old_price_12ml"
+                value={form.old_price_12ml}
+                onChange={handleChange}
+                placeholder="12ml Old Price (optional)"
+                type="number"
+                className="rounded border border-neutral-300 px-3 py-2 text-sm"
+              />
+              <div className="flex items-center justify-between rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500">
+                <span>12ml Discount (auto)</span>
+                <span className={discount12ml > 0 ? "font-semibold text-emerald-700" : ""}>
+                  {discount12ml > 0 ? `${discount12ml}% OFF` : "—"}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         <textarea
@@ -226,6 +263,7 @@ export function AdminProducts() {
               <h3 className="mt-3 text-sm font-semibold text-neutral-800">{product.name}</h3>
               <p className="text-xs text-neutral-500">{product.type} · {product.category}</p>
               <p className="text-xs text-neutral-500">₹{product.price} {product.discount > 0 && `(-${product.discount}%)`}</p>
+              {product.price_12ml && <p className="text-xs text-neutral-400">12ml: ₹{product.price_12ml}</p>}
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={() => handleEdit(product)}

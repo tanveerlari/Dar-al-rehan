@@ -15,6 +15,8 @@ export function ProductDetailPage() {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
 
+  const [selectedSize, setSelectedSize] = useState("3ml");
+
   const product = allProducts.find(
     (p) => (p.routeType || p.type.toLowerCase()) === type && String(p.id) === id
   );
@@ -30,8 +32,38 @@ export function ProductDetailPage() {
     );
   }
 
+  // Detect 12ml price from DB field or fallback to description regex (e.g. "12ml price: 559")
+  const price12ml = product.price_12ml || (() => {
+    if (!product.description) return null;
+    const match = product.description.match(/12\s*ml\s*(?:price|mrp)?\s*[:=\-]?\s*₹?\s*(\d+)/i);
+    return match ? Number(match[1]) : null;
+  })();
+
+  const oldPrice12ml = product.oldPrice_12ml || (price12ml ? Math.round(price12ml * 1.25) : null);
+  const hasVariants = Boolean(price12ml);
+
+  // Dynamic pricing based on active selected size
+  const activePrice = hasVariants && selectedSize === "12ml" ? price12ml : product.price;
+  const activeOldPrice = hasVariants && selectedSize === "12ml" ? oldPrice12ml : product.oldPrice;
+  const activeDiscount = activeOldPrice && activeOldPrice > activePrice
+    ? Math.round(((activeOldPrice - activePrice) / activeOldPrice) * 100)
+    : (selectedSize === "3ml" ? (product.discount || 0) : 0);
+
+  // Clean description if user typed "12ml price: ..." directly in text
+  const cleanedDescription = hasVariants && product.description
+    ? product.description.replace(/^12\s*ml\s*price\s*[:=\-]?\s*₹?\s*\d+\s*\n?/i, "").trim()
+    : product.description;
+
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    const cartProduct = {
+      ...product,
+      price: activePrice,
+      oldPrice: activeOldPrice,
+      discount: activeDiscount,
+      selectedSize: hasVariants ? selectedSize.toUpperCase() : (product.size || "Standard"),
+      size: hasVariants ? selectedSize.toUpperCase() : product.size,
+    };
+    addToCart(cartProduct, quantity);
     navigate("/cart");
   };
 
@@ -75,24 +107,86 @@ export function ProductDetailPage() {
 
           {/* Pricing */}
           <div className="mt-4 flex items-center gap-3">
-            <span className="font-serif text-3xl font-semibold text-neutral-900">₹{product.price}</span>
-            {product.oldPrice && (
-              <span className="text-base text-neutral-400 line-through">₹{product.oldPrice}</span>
+            <span className="font-serif text-3xl font-semibold text-neutral-900">₹{activePrice}</span>
+            {activeOldPrice && (
+              <span className="text-base text-neutral-400 line-through">₹{activeOldPrice}</span>
             )}
-            {product.discount > 0 && (
+            {activeDiscount > 0 && (
               <span className="rounded bg-amber-700 px-2 py-0.5 text-xs font-semibold text-white">
-                {product.discount}% OFF
+                {activeDiscount}% OFF
               </span>
             )}
           </div>
 
+          {/* Size Variant Selector (3ML / 12ML) */}
+          {hasVariants && (
+            <div className="mt-5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+                  Select Size: <span className="text-amber-800">{selectedSize.toUpperCase()}</span>
+                </span>
+                {selectedSize === "12ml" && (
+                  <span className="rounded-full bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                    ✨ Larger Bottle (12 ML)
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 max-w-xs">
+                {/* 3ML Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedSize("3ml")}
+                  className={`group relative flex flex-col items-center justify-center rounded-xl border-2 py-2.5 px-4 transition-all duration-300 ${
+                    selectedSize === "3ml"
+                      ? "border-amber-700 bg-amber-50/80 shadow-md ring-1 ring-amber-700/30"
+                      : "border-neutral-200 bg-white hover:border-amber-400 hover:bg-neutral-50/80"
+                  }`}
+                >
+                  <span className={`text-xs font-bold uppercase tracking-wider ${selectedSize === "3ml" ? "text-amber-900" : "text-neutral-700"}`}>
+                    3 ML
+                  </span>
+                  <span className="mt-0.5 font-serif text-sm font-semibold text-neutral-900">
+                    ₹{product.price}
+                  </span>
+                  {selectedSize === "3ml" && (
+                    <span className="absolute -top-2 right-2 rounded-full bg-amber-700 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase">
+                      Selected
+                    </span>
+                  )}
+                </button>
+
+                {/* 12ML Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedSize("12ml")}
+                  className={`group relative flex flex-col items-center justify-center rounded-xl border-2 py-2.5 px-4 transition-all duration-300 ${
+                    selectedSize === "12ml"
+                      ? "border-amber-700 bg-amber-50/80 shadow-md ring-1 ring-amber-700/30"
+                      : "border-neutral-200 bg-white hover:border-amber-400 hover:bg-neutral-50/80"
+                  }`}
+                >
+                  <span className={`text-xs font-bold uppercase tracking-wider ${selectedSize === "12ml" ? "text-amber-900" : "text-neutral-700"}`}>
+                    12 ML
+                  </span>
+                  <span className="mt-0.5 font-serif text-sm font-semibold text-neutral-900">
+                    ₹{price12ml}
+                  </span>
+                  {selectedSize === "12ml" && (
+                    <span className="absolute -top-2 right-2 rounded-full bg-amber-700 px-1.5 py-0.2 text-[9px] font-bold text-white uppercase">
+                      Selected
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Specifications Chips */}
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-600">
-            {product.size && (
-              <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1">
-                <strong>Size:</strong> {product.size}
-              </span>
-            )}
+            <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1">
+              <strong>Size:</strong> {hasVariants ? selectedSize.toUpperCase() : (product.size || "Standard")}
+            </span>
             {product.family && (
               <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1">
                 <strong>Fragrance Family:</strong> {product.family}
@@ -101,13 +195,13 @@ export function ProductDetailPage() {
           </div>
 
           {/* Product Description */}
-          {product.description && (
+          {cleanedDescription && (
             <div className="mt-6 rounded-xl border border-amber-950/10 bg-[#FAF7F2] p-4 text-sm leading-relaxed text-neutral-700">
               <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-900">
                 <Sparkles className="h-3.5 w-3.5 text-amber-700" /> Description
               </h3>
               <p className="whitespace-pre-line text-xs sm:text-sm text-neutral-600">
-                {product.description}
+                {cleanedDescription}
               </p>
             </div>
           )}
@@ -140,7 +234,7 @@ export function ProductDetailPage() {
 
           {quantity > 1 && (
             <p className="mt-3 text-xs text-neutral-500">
-              Subtotal ({quantity} items): <span className="font-semibold text-neutral-800">₹{product.price * quantity}</span>
+              Subtotal ({quantity} items): <span className="font-semibold text-neutral-800">₹{activePrice * quantity}</span>
             </p>
           )}
 

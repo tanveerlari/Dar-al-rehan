@@ -26,6 +26,8 @@ export function useSupabaseProducts() {
           description: p.description,
           image: p.image,
           image2: p.image2,
+          price_12ml: p.price_12ml,
+          oldPrice_12ml: p.old_price_12ml,
         }));
         setSupabaseProducts(mapped);
       }
