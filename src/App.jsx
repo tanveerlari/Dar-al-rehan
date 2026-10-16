@@ -17,6 +17,7 @@ import { CartToast } from "./components/CartToast";
 import { WelcomeAuthModal } from "./components/WelcomeAuthModal";
 import { PhoneAuthModal } from "./components/PhoneAuthModal";
 import { OpeningOfferBanner } from "./components/OpeningOfferBanner";
+import { RoyalPageLoader } from "./components/RoyalPageLoader";
 
 import { AdminLogin } from "./pages/admin/AdminLogin";
 import { AdminLayout } from "./pages/admin/AdminLayout";
@@ -57,6 +58,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
+      <RoyalPageLoader />
       {!isAdminRoute && <Navbar />}
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>

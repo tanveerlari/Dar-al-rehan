@@ -179,8 +179,8 @@ export function ShopPage() {
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4">
-              {paginatedProducts.map((product) => (
-                <ProductCard key={`${product.routeType || product.type}-${product.id}`} product={product} />
+              {paginatedProducts.map((product, idx) => (
+                <ProductCard key={`${product.routeType || product.type}-${product.id}`} product={product} isPriority={idx < 2} />
               ))}
             </div>
           )}

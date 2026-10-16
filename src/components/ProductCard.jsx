@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { Star, ShoppingBag, Check } from "lucide-react";
 import { useCart } from "../components/CartContext";
 
-export function ProductCard({ product }) {
+export function ProductCard({ product, isPriority = false }) {
   const { addToCart } = useCart();
   const [isAdded, setIsAdded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleAddToCart = () => {
     addToCart(product, 1);
@@ -25,15 +26,33 @@ export function ProductCard({ product }) {
           <div className="relative -mt-8 sm:-mt-14 flex flex-col items-center justify-end">
             <div className="pointer-events-none absolute top-1/3 left-1/2 h-28 w-28 sm:h-36 sm:w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/60 blur-2xl transition-all duration-700 group-hover:bg-amber-100/30 group-hover:scale-105" />
 
+            {/* Elegant Skeleton Shimmer while Image is Loading */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
+                <div className="relative flex flex-col items-center justify-center w-28 h-40 sm:w-32 sm:h-48 rounded-2xl bg-gradient-to-b from-[#F3E9DD] via-[#EADBCA]/60 to-[#DFD0BD] border border-amber-900/10 overflow-hidden shadow-sm">
+                  {/* Light sweep */}
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-luxury-shimmer" />
+                  <div className="w-8 h-8 rounded-full bg-amber-900/10 flex items-center justify-center mb-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-700/40 animate-ping" />
+                  </div>
+                  <span className="text-[9px] font-serif tracking-[0.2em] text-amber-900/40 uppercase">Dar Al Rehan</span>
+                </div>
+              </div>
+            )}
+
             <div className="relative z-10 flex h-44 sm:h-52 md:h-56 w-full items-end justify-center transition-transform duration-500 ease-out group-hover:-translate-y-1.5">
               <img
                 src={product.image}
                 alt={product.name}
-                loading="lazy"
+                loading={isPriority ? "eager" : "lazy"}
+                fetchPriority={isPriority ? "high" : undefined}
+                onLoad={() => setImageLoaded(true)}
                 style={{
                   transform: `scale(${product.imageScaleX || 1}, ${product.imageScaleY || 1})`,
                 }}
-                className="max-h-full w-auto object-contain drop-shadow-[0_10px_14px_rgba(50,25,5,0.20)] transition-transform duration-500"
+                className={`max-h-full w-auto object-contain drop-shadow-[0_10px_14px_rgba(50,25,5,0.20)] transition-all duration-700 ease-out ${
+                  imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                }`}
               />
             </div>
 
